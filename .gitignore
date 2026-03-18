@@ -43,15 +43,13 @@ Client_Server/frontend/node_modules/
 Client_Server/frontend/dist/
 Client_Server/plan.md
 Client_Server/plan.pdf
-Client_Server/shared_storage/
 
 # ======== Shared Storage / Output (Optional, depending on your needs) ========
 # Ignore generated output files in Demo
 Code/Demo/*/
 
 # Ignore shared_storage runtime task files
-shared_storage/tasks/*/*
-!shared_storage/tasks/.gitkeep
+shared_storage/
 # ======== IDE / Editors ========
 .vscode/
 .idea/
