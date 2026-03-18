@@ -1,0 +1,31 @@
+fastapi
+uvicorn[standard]
+python-multipart
+celery
+sqlalchemy
+pymysql
+cryptography
+pydantic
+pydantic-settings
+numpy
+opencv-python-headless; platform_system != "Windows"
+opencv-python; platform_system == "Windows"
+scikit-image
+scikit-learn
+pillow
+jinja2
+weasyprint
+pytest
+requests
+pypdf
+pywinauto; platform_system == "Windows"
+pywin32; platform_system == "Windows"
+dashscope
+matplotlib
+serpapi
+PyJWT
+passlib[bcrypt]
+bcrypt
+pyjwt
+passlib[bcrypt]
+bcrypt

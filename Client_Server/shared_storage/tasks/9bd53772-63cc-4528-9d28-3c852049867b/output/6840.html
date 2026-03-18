@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>红外光谱AI智能分析报告</title>
+    <style>
+        /* PDF 页面设置 (适配 WeasyPrint) */
+        @page {
+            size: A4;
+            margin: 2.54cm 2cm;
+            @bottom-center {
+                content: "第 " counter(page) " 页，共 " counter(pages) " 页";
+                font-size: 10pt;
+                color: #666;
+            }
+        }
+        
+        /* 基础样式 */
+        body { 
+            font-family: 'Microsoft YaHei', 'SimSun', sans-serif; 
+            line-height: 1.6; 
+            color: #333; 
+            font-size: 12pt;
+        }
+        
+        /* 标题部分 */
+        h1 { 
+            text-align: center; 
+            color: #2c3e50; 
+            border-bottom: 2px solid #3498db; 
+            padding-bottom: 10px; 
+            margin-bottom: 30px;
+        }
+        h2 { 
+            color: #2980b9; 
+            margin-top: 30px; 
+            border-left: 5px solid #3498db; 
+            padding-left: 10px; 
+            font-size: 16pt;
+        }
+        
+        /* 元数据（样本信息、日期等） */
+        .meta-info { 
+            display: flex; 
+            justify-content: space-between; 
+            margin-bottom: 20px; 
+            font-weight: bold;
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 10px;
+        }
+        
+        /* 图片容器 */
+        .image-container { 
+            text-align: center; 
+            margin: 20px 0; 
+        }
+        .image-container img { 
+            max-width: 100%; 
+            max-height: 400px; 
+            border: 1px solid #ccc; 
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1); 
+        }
+        
+        /* AI分析内容块 */
+        .analysis-content { 
+            background-color: #f8f9fa; 
+            padding: 20px; 
+            border-radius: 5px; 
+            border: 1px solid #e9ecef; 
+            white-space: pre-wrap;
+            text-align: justify;
+        }
+        
+        /* 数据表格 */
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 15px; 
+            page-break-inside: auto;
+        }
+        tr { page-break-inside: avoid; page-break-after: auto; }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 10px; 
+            text-align: center; 
+        }
+        th { 
+            background-color: #3498db; 
+            color: white; 
+        }
+    </style>
+</head>
+<body>
+
+    <h1>红外光谱AI智能分析报告</h1>
+
+    <div class="meta-info">
+        <span>样本编号：6840</span>
+        <span>生成日期：2026-03-18 13:29</span>
+    </div>
+
+    <!-- 第一部分：光谱图像 -->
+    <h2>一、 光谱图像</h2>
+    <div class="image-container">
+        
+            <img src="file:///C:/Users/34029/Desktop/IR-Project/Client_Server/shared_storage/tasks/9bd53772-63cc-4528-9d28-3c852049867b/output/spectrum_plot_auto.png" alt="Spectrum Image">
+        
+    </div>
+
+    <!-- 第二部分：主要化合物信息 -->
+    <h2>二、 检出化合物信息</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>中文名</th>
+                <th>英文名</th>
+                <th>CAS号</th>
+                <th>分子式</th>
+                <th>分子量</th>
+                <th>含量 (%)</th>
+            </tr>
+        </thead>
+        <tbody>
+            
+                
+                <tr>
+                    <td>乙烯-醋酸乙烯共聚物 (EVA)</td>
+                    <td>Ethylene Vinyl Acetate Copolymer</td>
+                    <td>24937-78-8</td>
+                    <td>(C2H4)n·(C4H6O2)m</td>
+                    <td>-</td>
+                    <td>>95</td>
+                </tr>
+                
+            
+        </tbody>
+    </table>
+
+    <!-- 附加部分：化合物结构图 -->
+    
+
+    <!-- 第三部分：关键数据摘录 -->
+    <h2>三、 关键特征波数与官能团解析</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>序号</th>
+                <th>波数 (cm⁻¹)</th>
+                <th>官能团归属</th>
+            </tr>
+        </thead>
+        <tbody>
+            
+                
+                <tr>
+                    <td>1</td>
+                    <td>2916</td>
+                    <td>亚甲基 -CH2- 反对称伸缩振动</td>
+                </tr>
+                
+                <tr>
+                    <td>2</td>
+                    <td>2848</td>
+                    <td>亚甲基 -CH2- 对称伸缩振动</td>
+                </tr>
+                
+                <tr>
+                    <td>3</td>
+                    <td>1737</td>
+                    <td>酯基 C=O 伸缩振动（强峰）</td>
+                </tr>
+                
+                <tr>
+                    <td>4</td>
+                    <td>1467</td>
+                    <td>亚甲基 -CH2- 面内弯曲振动（剪式振动）</td>
+                </tr>
+                
+                <tr>
+                    <td>5</td>
+                    <td>1371</td>
+                    <td>甲基 -CH3 对称弯曲振动（存在于醋酸根中）</td>
+                </tr>
+                
+                <tr>
+                    <td>6</td>
+                    <td>1240</td>
+                    <td>酯基 C-O-C 不对称伸缩振动（强峰）</td>
+                </tr>
+                
+                <tr>
+                    <td>7</td>
+                    <td>1021</td>
+                    <td>酯基 C-O-C 对称伸缩振动</td>
+                </tr>
+                
+                <tr>
+                    <td>8</td>
+                    <td>717</td>
+                    <td>长链亚甲基 -(CH2)n- 面内摇摆振动 (n≥4)</td>
+                </tr>
+                
+            
+        </tbody>
+    </table>
+
+    <!-- 第四部分：AI综合分析结论 -->
+    <h2>四、 综合分析结论</h2>
+    <div class="analysis-content">
+        综合分析红外光谱数据，该谱图呈现出典型的长链脂肪族聚合物底骨架与酯类侧链基团的混合特征。
+
+首先，谱图在2916 cm-1与2848 cm-1处出现强烈的吸收峰，这分别是亚甲基（-CH2-）的反对称与对称伸缩振动，配合1467 cm-1处的-CH2-面内弯曲振动以及717 cm-1处的长链亚甲基面内摇摆振动特征峰，充分证明了体系中存在大量的连续-(CH2)n-长碳链结构，这是聚乙烯骨架的典型特征。
+
+其次，谱图在1737 cm-1处出现尖锐且极强的吸收峰，归属于酯类羰基（C=O）的伸缩振动；同时在1240 cm-1和1021 cm-1处观察到酯基C-O-C的不对称和对称伸缩振动强峰。此外，1371 cm-1处的吸收峰指示了由于酯基连接的甲基（-CH3）产生的对称弯曲振动。这些特征完美对应了醋酸酯基团（即乙酸乙烯酯链段）的存在。
+
+综上所述，无论是聚乙烯长碳链骨架的振动特征，还是侧链醋酸酯基团的强吸收信号均非常清晰且完整。由此可以判定，该物质为乙烯与醋酸乙烯的共聚物（EVA），且未见其它明显杂质峰，判断为高弹性的纯EVA聚合物体系。
+    </div>
+
+    <!-- 第五部分：参考文献 -->
+    <h2>五、 参考文献</h2>
+    <div class="reference-content" style="padding: 10px 20px;">
+        
+            
+                <div style="margin-bottom: 15px; text-align: justify; word-wrap: break-word;">
+                    Shimoyama, M., Hayano, S., Matsukawa, K., Inoue, H., Ninomiya, T., & Ozaki, Y. (1998). Discrimination of ethylene/vinyl acetate copolymers with different composition and prediction of the content of vinyl acetate in the copolymers and their melting points by near‐infrared spectroscopy and chemometrics. Journal of Polymer Science Part B: Polymer Physics, 36(9), 1529-1537.
+                </div>
+            
+                <div style="margin-bottom: 15px; text-align: justify; word-wrap: break-word;">
+                    D’Amelia, R. P., Gentile, S., Nirode, W. F., & Huang, L. (2016). Quantitative analysis of copolymers and blends of polyvinyl acetate (PVAc) using Fourier transform infrared spectroscopy (FTIR) and elemental analysis (EA). World J. Chem. Educ, 4(2), 25-31.
+                </div>
+            
+                <div style="margin-bottom: 15px; text-align: justify; word-wrap: break-word;">
+                    Khettry, A., & Hansen, M. G. (1996). Real‐time analysis of ethylene vinyl acetate random copolymers using near infrared spectroscopy during extrusion. Polymer Engineering & Science, 36(9), 1232-1243.
+                </div>
+            
+        
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ report_title | default('红外光谱AI智能分析报告') }}</title>
+    <style>
+        /* PDF 页面设置 (适配 WeasyPrint) */
+        @page {
+            size: A4;
+            margin: 2.54cm 2cm;
+            @bottom-center {
+                content: "第 " counter(page) " 页，共 " counter(pages) " 页";
+                font-size: 10pt;
+                color: #666;
+            }
+        }
+        
+        /* 基础样式 */
+        body { 
+            font-family: 'Microsoft YaHei', 'SimSun', sans-serif; 
+            line-height: 1.6; 
+            color: #333; 
+            font-size: 12pt;
+        }
+        
+        /* 标题部分 */
+        h1 { 
+            text-align: center; 
+            color: #2c3e50; 
+            border-bottom: 2px solid #3498db; 
+            padding-bottom: 10px; 
+            margin-bottom: 30px;
+        }
+        h2 { 
+            color: #2980b9; 
+            margin-top: 30px; 
+            border-left: 5px solid #3498db; 
+            padding-left: 10px; 
+            font-size: 16pt;
+        }
+        
+        /* 元数据（样本信息、日期等） */
+        .meta-info { 
+            display: flex; 
+            justify-content: space-between; 
+            margin-bottom: 20px; 
+            font-weight: bold;
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 10px;
+        }
+        
+        /* 图片容器 */
+        .image-container { 
+            text-align: center; 
+            margin: 20px 0; 
+        }
+        .image-container img { 
+            max-width: 100%; 
+            max-height: 400px; 
+            border: 1px solid #ccc; 
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1); 
+        }
+        
+        /* AI分析内容块 */
+        .analysis-content { 
+            background-color: #f8f9fa; 
+            padding: 20px; 
+            border-radius: 5px; 
+            border: 1px solid #e9ecef; 
+            white-space: pre-wrap;
+            text-align: justify;
+        }
+        
+        /* 数据表格 */
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 15px; 
+            page-break-inside: auto;
+        }
+        tr { page-break-inside: avoid; page-break-after: auto; }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 10px; 
+            text-align: center; 
+        }
+        th { 
+            background-color: #3498db; 
+            color: white; 
+        }
+    </style>
+</head>
+<body>
+
+    <h1>{{ report_title | default('红外光谱AI智能分析报告') }}</h1>
+
+    <div class="meta-info">
+        <span>样本编号：{{ sample_id | default('未提供') }}</span>
+        <span>生成日期：{{ date | default('2026-03-04') }}</span>
+    </div>
+
+    <!-- 第一部分：光谱图像 -->
+    <h2>一、 光谱图像</h2>
+    <div class="image-container">
+        {% if spectrum_image %}
+            <img src="{{ spectrum_image }}" alt="Spectrum Image">
+        {% else %}
+            <!-- 如果没有提供图片则显示占位符 -->
+            <div style="padding: 50px; background: #eee; border: 1px dashed #999; color: #666;">
+                [图谱图像位置]
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- 第二部分：主要化合物信息 -->
+    <h2>二、 检出化合物信息</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>中文名</th>
+                <th>英文名</th>
+                <th>CAS号</th>
+                <th>分子式</th>
+                <th>分子量</th>
+                <th>含量 (%)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if detected_compounds %}
+                {% for comp in detected_compounds[:3] %}
+                <tr>
+                    <td>{{ comp.name_cn | default('-') }}</td>
+                    <td>{{ comp.name_en | default('-') }}</td>
+                    <td>{{ comp.cas | default('-') }}</td>
+                    <td>{{ comp.formula | default('-') }}</td>
+                    <td>{{ comp.weight | default('-') }}</td>
+                    <td>{{ comp.content | default('-') }}</td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="6" style="color: #999;">未提供检出化合物信息</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+    <!-- 附加部分：化合物结构图 -->
+    {% if structure_images %}
+    <div class="structure-images" style="margin-top: 20px;">
+        <h3 style="color: #2c3e50; font-size: 14pt; margin-bottom: 15px;">主要化合物结构图</h3>
+        <div style="text-align: center; display: flex; flex-wrap: wrap; justify-content: center; gap: 15px;">
+            {% for img_src in structure_images %}
+                <img src="{{ img_src }}" alt="化合物结构图" style="max-width: 45%; max-height: 250px; border: 1px solid #ddd; padding: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); background-color: #fff;">
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 第三部分：关键数据摘录 -->
+    <h2>三、 关键特征波数与官能团解析</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>序号</th>
+                <th>波数 (cm⁻¹)</th>
+                <th>官能团归属</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if key_peaks %}
+                {% for peak in key_peaks %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ peak.x }}</td>
+                    <td>{{ peak.note | default('-') }}</td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="3" style="color: #999;">未提取到关键峰值数据</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+    <!-- 第四部分：AI综合分析结论 -->
+    <h2>四、 综合分析结论</h2>
+    <div class="analysis-content">
+        {{ analysis_text | default('正在等待AI分析结果...') }}
+    </div>
+
+    <!-- 第五部分：参考文献 -->
+    <h2>五、 参考文献</h2>
+    <div class="reference-content" style="padding: 10px 20px;">
+        {% if references %}
+            {% for ref in references %}
+                <div style="margin-bottom: 15px; text-align: justify; word-wrap: break-word;">
+                    {{ ref.apa_citation | default(ref) | safe }}
+                </div>
+            {% endfor %}
+        {% else %}
+            <div style="color: #999;">暂无参考文献</div>
+        {% endif %}
+    </div>
+
+</body>
+</html>

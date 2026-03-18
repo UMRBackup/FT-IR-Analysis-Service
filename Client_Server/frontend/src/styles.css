@@ -1,0 +1,104 @@
+:root {
+  --bg: #f2efe8;
+  --surface: #fffdf7;
+  --ink: #1a1f1d;
+  --muted: #5e675f;
+  --accent: #0f766e;
+  --accent-2: #c2410c;
+  --line: #d8d2c3;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", "PingFang SC", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 15% 5%, #ffedd5 0, transparent 35%),
+    radial-gradient(circle at 90% 95%, #ccfbf1 0, transparent 35%),
+    var(--bg);
+}
+
+.page {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 8px 24px rgba(20, 24, 22, 0.06);
+}
+
+h1 {
+  margin-top: 0;
+}
+
+label {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 8px;
+}
+
+input[type="file"] {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.badge {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 10px;
+  color: var(--muted);
+}
+
+.logs {
+  margin-top: 18px;
+  border-top: 1px dashed var(--line);
+  padding-top: 10px;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.log-item {
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 13px;
+  margin: 4px 0;
+}
+
+.error {
+  color: var(--accent-2);
+}
+
+.muted {
+  color: var(--muted);
+  margin: 6px 0;
+  font-size: 13px;
+}

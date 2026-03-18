@@ -1,0 +1,15 @@
+numpy
+opencv-python
+scikit-image
+scikit-learn
+pillow
+jinja2
+weasyprint
+pytest
+requests
+pywinauto
+pywin32
+pypdf
+dashscope
+matplotlib
+serpapi

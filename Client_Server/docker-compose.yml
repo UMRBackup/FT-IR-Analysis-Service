@@ -1,0 +1,77 @@
+services:
+  mysql:
+    image: mysql:9.6.0
+    container_name: ftir-mysql
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ftir
+      MYSQL_USER: ftir
+      MYSQL_PASSWORD: ftir
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: ftir-backend:local
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+      - ../Code:/code
+      - ./shared_storage:/shared
+    environment:
+      CODE_ROOT: /code
+      STORAGE_ROOT: /shared
+      SHARED_STORAGE_ROOT: /shared
+      DATABASE_URL: mysql+pymysql://ftir:ftir@mysql:3306/ftir
+      CELERY_BROKER_URL: sqla+mysql+pymysql://ftir:ftir@mysql:3306/ftir
+      CELERY_RESULT_BACKEND: db+mysql+pymysql://ftir:ftir@mysql:3306/ftir
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      CAS_API_KEY: ${CAS_API_KEY:-}
+      SERP_API_KEY: ${SERP_API_KEY:-}
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+# Worker service MUST be placed in a separate Windows machine because it requires win32api and OMNIC interactability.
+# Do NOT run this worker in Linux/Docker. It will crash on startup due to missing win32api.
+#  worker:
+#    build:
+#      context: ./backend
+#      dockerfile: Dockerfile
+#    image: ftir-backend:local
+#    working_dir: /app
+#    volumes:
+#      - ./backend:/app
+#      - ../Code:/code
+#      - ./shared_storage:/shared
+#    environment:
+#      CODE_ROOT: /code
+#      STORAGE_ROOT: /shared
+#      SHARED_STORAGE_ROOT: /shared
+#      DATABASE_URL: mysql+pymysql://ftir:ftir@mysql:3306/ftir
+#      CELERY_BROKER_URL: sqla+mysql+pymysql://ftir:ftir@mysql:3306/ftir
+#      CELERY_RESULT_BACKEND: db+mysql+pymysql://ftir:ftir@mysql:3306/ftir
+#      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
+#      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+#      CAS_API_KEY: ${CAS_API_KEY:-}
+#      SERP_API_KEY: ${SERP_API_KEY:-}
+#    command: celery -A app.celery_app:celery_app worker --loglevel=info -Q preprocess_queue,postprocess_queue
+#    depends_on:
+#      mysql:
+#        condition: service_healthy
+
+volumes:
+  mysql_data:

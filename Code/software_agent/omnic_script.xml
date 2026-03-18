@@ -1,0 +1,246 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Script xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Commands>
+    <ScriptAction>
+      <ScriptCommand xsi:type="StartApplicationCommand" CommandID="56d42dcd-5396-4455-a9c5-b357aa81cbdf" CommandName="StartApplicationCommand" IsCommented="false" SelectionName="Start Application" DefaultPause="0" LineNumber="1" PauseBeforeExeucution="false" CommandEnabled="true" v_ApplicationPath="C:\Program Files (x86)\Omnic\omnic32.exe" v_Arguments="" v_WaitForExit="" v_StartedProcessName="" v_WindowName="" v_WindowHandle="" v_WaitTimeForExecute="2000" v_WaitTimeBeforeNext="1000" v_WaitTimeForApplication="10" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="SendAdvancedKeyStrokesCommand" CommandID="aa036367-14d2-45fe-b1d8-e78fb48a0686" CommandName="SendAdvancedKeyStrokesCommand" IsCommented="false" SelectionName="Send Advanced Keystrokes" DefaultPause="0" LineNumber="2" PauseBeforeExeucution="false" CommandEnabled="true" v_WindowName="OMNIC - [Window1]" v_CheckMethod="" v_WaitTimeForWindow="60" v_WindowNameResult="" v_WindowHandleResult="" v_CaseSensitive="" v_TrimBeforeCheck="" v_SelectionMethod="" v_TargetWindowIndex="0" v_WaitTimeBetweenFindAndAction="0" v_ActivateBeforeAction="Yes" v_KeyUpDefault="" v_WaitTimeAfterKeyEnter="500" v_ActivateCurrentWindow="">
+        <v_KeyActions>
+          <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+            <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="KeyActions022626.043220" msdata:UseCurrentLocale="true">
+              <xs:complexType>
+                <xs:choice minOccurs="0" maxOccurs="unbounded">
+                  <xs:element name="KeyActions022626.043220">
+                    <xs:complexType>
+                      <xs:sequence>
+                        <xs:element name="Key" type="xs:string" minOccurs="0" />
+                        <xs:element name="Action" type="xs:string" minOccurs="0" />
+                      </xs:sequence>
+                    </xs:complexType>
+                  </xs:element>
+                </xs:choice>
+              </xs:complexType>
+            </xs:element>
+          </xs:schema>
+          <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+            <DocumentElement>
+              <KeyActions022626.043220 diffgr:id="KeyActions022626.0432201" msdata:rowOrder="0" diffgr:hasChanges="modified">
+                <Key>Windows (Left) [LWin]</Key>
+                <Action>Key Down</Action>
+              </KeyActions022626.043220>
+              <KeyActions022626.043220 diffgr:id="KeyActions022626.0432202" msdata:rowOrder="1" diffgr:hasChanges="modified">
+                <Key>Up Arrow [Up]</Key>
+                <Action>Key Down</Action>
+              </KeyActions022626.043220>
+              <KeyActions022626.043220 diffgr:id="KeyActions022626.0432203" msdata:rowOrder="2" diffgr:hasChanges="modified">
+                <Key>Up Arrow [Up]</Key>
+                <Action>Key Up</Action>
+              </KeyActions022626.043220>
+              <KeyActions022626.043220 diffgr:id="KeyActions022626.0432204" msdata:rowOrder="3" diffgr:hasChanges="modified">
+                <Key>Windows (Left) [LWin]</Key>
+                <Action>Key Up</Action>
+              </KeyActions022626.043220>
+            </DocumentElement>
+            <diffgr:before>
+              <KeyActions022626.043220 diffgr:id="KeyActions022626.0432201" msdata:rowOrder="0">
+                <Key>Windows (Left) [LWin]</Key>
+                <Action>Key Down</Action>
+              </KeyActions022626.043220>
+              <KeyActions022626.043220 diffgr:id="KeyActions022626.0432202" msdata:rowOrder="1">
+                <Key>Up Arrow [Up]</Key>
+                <Action>Key Down</Action>
+              </KeyActions022626.043220>
+              <KeyActions022626.043220 diffgr:id="KeyActions022626.0432203" msdata:rowOrder="2">
+                <Key>Up Arrow [Up]</Key>
+                <Action>Key Up</Action>
+              </KeyActions022626.043220>
+              <KeyActions022626.043220 diffgr:id="KeyActions022626.0432204" msdata:rowOrder="3">
+                <Key>Windows (Left) [LWin]</Key>
+                <Action>Key Up</Action>
+              </KeyActions022626.043220>
+            </diffgr:before>
+          </diffgr:diffgram>
+        </v_KeyActions>
+      </ScriptCommand>
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="EnterKeysCommand" CommandID="d04aba99-fb29-4b38-bb28-057b1f0a196e" CommandName="EnterKeysCommand" IsCommented="false" SelectionName="Enter Keys" DefaultPause="0" LineNumber="3" PauseBeforeExeucution="false" CommandEnabled="true" v_WindowName="OMNIC - [Window1]" v_CheckMethod="" v_WaitTimeForWindow="60" v_WindowNameResult="" v_WindowHandleResult="" v_CaseSensitive="" v_TrimBeforeCheck="" v_SelectionMethod="" v_TargetWindowIndex="0" v_WaitTimeBetweenFindAndAction="0" v_ActivateBeforeAction="Yes" v_TextToSend="^{o}" v_EncryptionOption="" v_UseClipBoard="" v_WaitTimeAfterKeyEnter="500" v_ActivateCurrentWindow="" v_ClearClipboardAfterPaste="" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="EnterKeysCommand" CommandID="4e9b51c1-f11b-4704-9e82-88dd5804c22a" CommandName="EnterKeysCommand" IsCommented="false" SelectionName="Enter Keys" DefaultPause="0" LineNumber="4" PauseBeforeExeucution="false" CommandEnabled="true" v_WindowName="打开" v_CheckMethod="" v_WaitTimeForWindow="20" v_WindowNameResult="" v_WindowHandleResult="" v_CaseSensitive="" v_TrimBeforeCheck="" v_SelectionMethod="" v_TargetWindowIndex="0" v_WaitTimeBetweenFindAndAction="0.1" v_ActivateBeforeAction="Yes" v_TextToSend="C:\Users\34029\Desktop\result.csv" v_EncryptionOption="" v_UseClipBoard="" v_WaitTimeAfterKeyEnter="60" v_ActivateCurrentWindow="" v_ClearClipboardAfterPaste="" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="EnterKeysCommand" CommandID="e2276b99-1b64-4d85-9033-c859653fa5db" CommandName="EnterKeysCommand" IsCommented="false" SelectionName="Enter Keys" DefaultPause="0" LineNumber="5" PauseBeforeExeucution="false" CommandEnabled="true" v_WindowName="打开" v_CheckMethod="" v_WaitTimeForWindow="20" v_WindowNameResult="" v_WindowHandleResult="" v_CaseSensitive="" v_TrimBeforeCheck="" v_SelectionMethod="" v_TargetWindowIndex="0" v_WaitTimeBetweenFindAndAction="0" v_ActivateBeforeAction="Yes" v_TextToSend="{ENTER}" v_EncryptionOption="" v_UseClipBoard="" v_WaitTimeAfterKeyEnter="60" v_ActivateCurrentWindow="" v_ClearClipboardAfterPaste="" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="EnterKeysCommand" CommandID="38d6c8ce-3ebb-488f-abce-73e99c3dc84b" CommandName="EnterKeysCommand" IsCommented="false" SelectionName="Enter Keys" DefaultPause="0" LineNumber="6" PauseBeforeExeucution="false" CommandEnabled="true" v_WindowName="参数" v_CheckMethod="" v_WaitTimeForWindow="20" v_WindowNameResult="" v_WindowHandleResult="" v_CaseSensitive="" v_TrimBeforeCheck="" v_SelectionMethod="" v_TargetWindowIndex="0" v_WaitTimeBetweenFindAndAction="0" v_ActivateBeforeAction="Yes" v_TextToSend="{TAB 2}" v_EncryptionOption="" v_UseClipBoard="" v_WaitTimeAfterKeyEnter="60" v_ActivateCurrentWindow="" v_ClearClipboardAfterPaste="" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="EnterKeysCommand" CommandID="97840fe0-3b45-447c-a129-2733ca460176" CommandName="EnterKeysCommand" IsCommented="false" SelectionName="Enter Keys" DefaultPause="0" LineNumber="7" PauseBeforeExeucution="false" CommandEnabled="true" v_WindowName="参数" v_CheckMethod="" v_WaitTimeForWindow="20" v_WindowNameResult="" v_WindowHandleResult="" v_CaseSensitive="" v_TrimBeforeCheck="" v_SelectionMethod="" v_TargetWindowIndex="0" v_WaitTimeBetweenFindAndAction="0" v_ActivateBeforeAction="Yes" v_TextToSend="{UP}" v_EncryptionOption="" v_UseClipBoard="" v_WaitTimeAfterKeyEnter="60" v_ActivateCurrentWindow="" v_ClearClipboardAfterPaste="" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="EnterKeysCommand" CommandID="9d65bb6d-9c09-4a9a-8ec9-210ed5c18a4c" CommandName="EnterKeysCommand" IsCommented="false" SelectionName="Enter Keys" DefaultPause="0" LineNumber="8" PauseBeforeExeucution="false" CommandEnabled="true" v_WindowName="参数" v_CheckMethod="" v_WaitTimeForWindow="20" v_WindowNameResult="" v_WindowHandleResult="" v_CaseSensitive="" v_TrimBeforeCheck="" v_SelectionMethod="" v_TargetWindowIndex="0" v_WaitTimeBetweenFindAndAction="0" v_ActivateBeforeAction="Yes" v_TextToSend="{ENTER}" v_EncryptionOption="" v_UseClipBoard="" v_WaitTimeAfterKeyEnter="60" v_ActivateCurrentWindow="" v_ClearClipboardAfterPaste="" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="EnterKeysCommand" CommandID="308b5ac3-6fff-457b-8fd0-37cc6ec7657e" CommandName="EnterKeysCommand" IsCommented="false" SelectionName="Enter Keys" DefaultPause="0" LineNumber="9" PauseBeforeExeucution="false" CommandEnabled="true" v_WindowName="OMNIC - [Window1]" v_CheckMethod="" v_WaitTimeForWindow="20" v_WindowNameResult="" v_WindowHandleResult="" v_CaseSensitive="" v_TrimBeforeCheck="" v_SelectionMethod="" v_TargetWindowIndex="0" v_WaitTimeBetweenFindAndAction="0" v_ActivateBeforeAction="Yes" v_TextToSend="%{a}" v_EncryptionOption="" v_UseClipBoard="" v_WaitTimeAfterKeyEnter="60" v_ActivateCurrentWindow="" v_ClearClipboardAfterPaste="" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="EnterKeysCommand" CommandID="ce6be0c2-8edb-452d-96c2-281c147485bf" CommandName="EnterKeysCommand" IsCommented="false" SelectionName="Enter Keys" DefaultPause="0" LineNumber="10" PauseBeforeExeucution="false" CommandEnabled="true" v_WindowName="OMNIC - [Window1]" v_CheckMethod="" v_WaitTimeForWindow="20" v_WindowNameResult="" v_WindowHandleResult="" v_CaseSensitive="" v_TrimBeforeCheck="" v_SelectionMethod="" v_TargetWindowIndex="0" v_WaitTimeBetweenFindAndAction="0" v_ActivateBeforeAction="Yes" v_TextToSend="y" v_EncryptionOption="" v_UseClipBoard="" v_WaitTimeAfterKeyEnter="60" v_ActivateCurrentWindow="" v_ClearClipboardAfterPaste="" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="MoveMouseCommand" CommandID="a6615bc1-ecc4-4192-8960-c1af8d7ecde8" CommandName="MoveMouseCommand" IsCommented="false" SelectionName="Move Mouse" DefaultPause="0" LineNumber="11" PauseBeforeExeucution="false" CommandEnabled="true" v_XMousePosition="275" v_YMousePosition="253" v_MouseClick="" v_WaitTimeAfterClick="60" v_IgnoreWaitTime="No" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="ClickMouseCommand" CommandID="0bbb0994-82e4-4fae-8b5c-998f5ec1c4e2" CommandName="ClickMouseCommand" IsCommented="false" SelectionName="Click Mouse" DefaultPause="0" LineNumber="12" PauseBeforeExeucution="false" CommandEnabled="true" v_MouseClick="Left Click" v_WaitTimeAfterClick="60" v_IgnoreWaitTime="No" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="MoveMouseCommand" CommandID="3f83adc3-8346-4c2b-badd-4201bfaf0589" CommandName="MoveMouseCommand" IsCommented="false" SelectionName="Move Mouse" DefaultPause="0" LineNumber="13" PauseBeforeExeucution="false" CommandEnabled="true" v_XMousePosition="512" v_YMousePosition="280" v_MouseClick="" v_WaitTimeAfterClick="60" v_IgnoreWaitTime="Yes" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="ClickMouseCommand" CommandID="bc05cbd2-03d1-42a9-8da2-099c1110ab2c" CommandName="ClickMouseCommand" IsCommented="false" SelectionName="Click Mouse" DefaultPause="0" LineNumber="14" PauseBeforeExeucution="false" CommandEnabled="true" v_MouseClick="Left Down" v_WaitTimeAfterClick="60" v_IgnoreWaitTime="No" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="MoveMouseCommand" CommandID="c6e4a026-bd3f-40c8-892d-bb0a16656e60" CommandName="MoveMouseCommand" IsCommented="false" SelectionName="Move Mouse" DefaultPause="0" LineNumber="15" PauseBeforeExeucution="false" CommandEnabled="true" v_XMousePosition="512" v_YMousePosition="400" v_MouseClick="" v_WaitTimeAfterClick="60" v_IgnoreWaitTime="Yes" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="ClickMouseCommand" CommandID="029e3ff5-1d17-4322-adce-52ef0682cf94" CommandName="ClickMouseCommand" IsCommented="false" SelectionName="Click Mouse" DefaultPause="0" LineNumber="16" PauseBeforeExeucution="false" CommandEnabled="true" v_MouseClick="Left Up" v_WaitTimeAfterClick="60" v_IgnoreWaitTime="No" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="MoveMouseCommand" CommandID="af5470d9-6edb-46de-a7ed-6b0737384808" CommandName="MoveMouseCommand" IsCommented="false" SelectionName="Move Mouse" DefaultPause="0" LineNumber="17" PauseBeforeExeucution="false" CommandEnabled="true" v_XMousePosition="290" v_YMousePosition="405" v_MouseClick="" v_WaitTimeAfterClick="60" v_IgnoreWaitTime="Yes" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="SendAdvancedKeyStrokesCommand" CommandID="06899961-bee7-430c-bc70-bfe2822d5c23" CommandName="SendAdvancedKeyStrokesCommand" IsCommented="false" SelectionName="Send Advanced Keystrokes" DefaultPause="0" LineNumber="18" PauseBeforeExeucution="false" CommandEnabled="true" v_WindowName="检索设置" v_CheckMethod="" v_WaitTimeForWindow="60" v_WindowNameResult="" v_WindowHandleResult="" v_CaseSensitive="" v_TrimBeforeCheck="" v_SelectionMethod="" v_TargetWindowIndex="0" v_WaitTimeBetweenFindAndAction="0" v_ActivateBeforeAction="Yes" v_KeyUpDefault="" v_WaitTimeAfterKeyEnter="500" v_ActivateCurrentWindow="">
+        <v_KeyActions>
+          <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+            <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="KeyActions022626.052743" msdata:UseCurrentLocale="true">
+              <xs:complexType>
+                <xs:choice minOccurs="0" maxOccurs="unbounded">
+                  <xs:element name="KeyActions022626.052743">
+                    <xs:complexType>
+                      <xs:sequence>
+                        <xs:element name="Key" type="xs:string" minOccurs="0" />
+                        <xs:element name="Action" type="xs:string" minOccurs="0" />
+                      </xs:sequence>
+                    </xs:complexType>
+                  </xs:element>
+                </xs:choice>
+              </xs:complexType>
+            </xs:element>
+          </xs:schema>
+          <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+            <DocumentElement>
+              <KeyActions022626.052743 diffgr:id="KeyActions022626.0527431" msdata:rowOrder="0" diffgr:hasChanges="modified">
+                <Key>Shift [ShiftKey]</Key>
+                <Action>Key Down</Action>
+              </KeyActions022626.052743>
+            </DocumentElement>
+            <diffgr:before>
+              <KeyActions022626.052743 diffgr:id="KeyActions022626.0527431" msdata:rowOrder="0">
+                <Key>Shift [ShiftKey]</Key>
+                <Action>Key Down</Action>
+              </KeyActions022626.052743>
+            </diffgr:before>
+          </diffgr:diffgram>
+        </v_KeyActions>
+      </ScriptCommand>
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="ClickMouseCommand" CommandID="84d89561-a835-4600-af4a-09bcb0679a4b" CommandName="ClickMouseCommand" IsCommented="false" SelectionName="Click Mouse" DefaultPause="0" LineNumber="19" PauseBeforeExeucution="false" CommandEnabled="true" v_MouseClick="Left Click" v_WaitTimeAfterClick="60" v_IgnoreWaitTime="No" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="SendAdvancedKeyStrokesCommand" CommandID="b7c952c1-3b11-408b-9c2e-9c65d71138eb" CommandName="SendAdvancedKeyStrokesCommand" IsCommented="false" SelectionName="Send Advanced Keystrokes" DefaultPause="0" LineNumber="20" PauseBeforeExeucution="false" CommandEnabled="true" v_WindowName="检索设置" v_CheckMethod="" v_WaitTimeForWindow="60" v_WindowNameResult="" v_WindowHandleResult="" v_CaseSensitive="" v_TrimBeforeCheck="" v_SelectionMethod="" v_TargetWindowIndex="0" v_WaitTimeBetweenFindAndAction="0" v_ActivateBeforeAction="Yes" v_KeyUpDefault="" v_WaitTimeAfterKeyEnter="500" v_ActivateCurrentWindow="">
+        <v_KeyActions>
+          <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+            <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="KeyActions022626.052743" msdata:UseCurrentLocale="true">
+              <xs:complexType>
+                <xs:choice minOccurs="0" maxOccurs="unbounded">
+                  <xs:element name="KeyActions022626.052743">
+                    <xs:complexType>
+                      <xs:sequence>
+                        <xs:element name="Key" type="xs:string" minOccurs="0" />
+                        <xs:element name="Action" type="xs:string" minOccurs="0" />
+                      </xs:sequence>
+                    </xs:complexType>
+                  </xs:element>
+                </xs:choice>
+              </xs:complexType>
+            </xs:element>
+          </xs:schema>
+          <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+            <DocumentElement>
+              <KeyActions022626.052743 diffgr:id="KeyActions022626.0527431" msdata:rowOrder="0" diffgr:hasChanges="modified">
+                <Key>Shift [ShiftKey]</Key>
+                <Action>Key Up</Action>
+              </KeyActions022626.052743>
+            </DocumentElement>
+            <diffgr:before>
+              <KeyActions022626.052743 diffgr:id="KeyActions022626.0527431" msdata:rowOrder="0">
+                <Key>Shift [ShiftKey]</Key>
+                <Action>Key Up</Action>
+              </KeyActions022626.052743>
+            </diffgr:before>
+          </diffgr:diffgram>
+        </v_KeyActions>
+      </ScriptCommand>
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="MoveMouseCommand" CommandID="fcc4d5b0-5f02-4967-ac82-d9dec877c8cf" CommandName="MoveMouseCommand" IsCommented="false" SelectionName="Move Mouse" DefaultPause="0" LineNumber="21" PauseBeforeExeucution="false" CommandEnabled="true" v_XMousePosition="620" v_YMousePosition="285" v_MouseClick="" v_WaitTimeAfterClick="60" v_IgnoreWaitTime="Yes" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="ClickMouseCommand" CommandID="420659ee-4cc0-4ebe-879a-ba434be08680" CommandName="ClickMouseCommand" IsCommented="false" SelectionName="Click Mouse" DefaultPause="0" LineNumber="22" PauseBeforeExeucution="false" CommandEnabled="true" v_MouseClick="Left Click" v_WaitTimeAfterClick="60" v_IgnoreWaitTime="No" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="MoveMouseCommand" CommandID="1349f50b-9d91-48eb-80e9-26d20e65833c" CommandName="MoveMouseCommand" IsCommented="false" SelectionName="Move Mouse" DefaultPause="0" LineNumber="23" PauseBeforeExeucution="false" CommandEnabled="true" v_XMousePosition="880" v_YMousePosition="665" v_MouseClick="" v_WaitTimeAfterClick="60" v_IgnoreWaitTime="Yes" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="ClickMouseCommand" CommandID="a719ae86-03a8-4776-8a4d-9b09c1d294bb" CommandName="ClickMouseCommand" IsCommented="false" SelectionName="Click Mouse" DefaultPause="0" LineNumber="24" PauseBeforeExeucution="false" CommandEnabled="true" v_MouseClick="Left Click" v_WaitTimeAfterClick="60" v_IgnoreWaitTime="No" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="EnterKeysCommand" CommandID="ef539757-8226-40ea-afac-7af9115b7e70" CommandName="EnterKeysCommand" IsCommented="false" SelectionName="Enter Keys" DefaultPause="0" LineNumber="25" PauseBeforeExeucution="false" CommandEnabled="true" v_WindowName="OMNIC - [Window1]" v_CheckMethod="" v_WaitTimeForWindow="60" v_WindowNameResult="" v_WindowHandleResult="" v_CaseSensitive="" v_TrimBeforeCheck="" v_SelectionMethod="" v_TargetWindowIndex="0" v_WaitTimeBetweenFindAndAction="0" v_ActivateBeforeAction="Yes" v_TextToSend="^{l}" v_EncryptionOption="" v_UseClipBoard="" v_WaitTimeAfterKeyEnter="500" v_ActivateCurrentWindow="" v_ClearClipboardAfterPaste="" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="MoveMouseCommand" CommandID="dd4d7203-8e81-4190-a637-5ff318cd3859" CommandName="MoveMouseCommand" IsCommented="false" SelectionName="Move Mouse" DefaultPause="0" LineNumber="26" PauseBeforeExeucution="false" CommandEnabled="true" v_XMousePosition="1595" v_YMousePosition="1095" v_MouseClick="" v_WaitTimeAfterClick="60" v_IgnoreWaitTime="Yes" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="ClickMouseCommand" CommandID="f776271a-316d-4285-95c8-32f356f33331" CommandName="ClickMouseCommand" IsCommented="false" SelectionName="Click Mouse" DefaultPause="0" LineNumber="27" PauseBeforeExeucution="false" CommandEnabled="true" v_MouseClick="Left Click" v_WaitTimeAfterClick="60" v_IgnoreWaitTime="No" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="MoveMouseCommand" CommandID="45662108-33f5-4730-bc8e-345c7ab109d7" CommandName="MoveMouseCommand" IsCommented="false" SelectionName="Move Mouse" DefaultPause="0" LineNumber="28" PauseBeforeExeucution="false" CommandEnabled="true" v_XMousePosition="1690" v_YMousePosition="1095" v_MouseClick="" v_WaitTimeAfterClick="60" v_IgnoreWaitTime="Yes" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="ClickMouseCommand" CommandID="77a26b30-902f-406c-88ef-21eb53ff6c55" CommandName="ClickMouseCommand" IsCommented="false" SelectionName="Click Mouse" DefaultPause="0" LineNumber="29" PauseBeforeExeucution="false" CommandEnabled="true" v_MouseClick="Left Click" v_WaitTimeAfterClick="60" v_IgnoreWaitTime="No" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="EnterKeysCommand" CommandID="f8a58169-04db-4a9f-87df-482b20346660" CommandName="EnterKeysCommand" IsCommented="false" SelectionName="Enter Keys" DefaultPause="0" LineNumber="30" PauseBeforeExeucution="false" CommandEnabled="true" v_WindowName="打印" v_CheckMethod="" v_WaitTimeForWindow="20" v_WindowNameResult="" v_WindowHandleResult="" v_CaseSensitive="" v_TrimBeforeCheck="" v_SelectionMethod="" v_TargetWindowIndex="0" v_WaitTimeBetweenFindAndAction="0" v_ActivateBeforeAction="Yes" v_TextToSend="{ENTER}" v_EncryptionOption="" v_UseClipBoard="" v_WaitTimeAfterKeyEnter="60" v_ActivateCurrentWindow="" v_ClearClipboardAfterPaste="" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="EnterKeysCommand" CommandID="60e51fd0-310b-49df-9644-642a4e604087" CommandName="EnterKeysCommand" IsCommented="false" SelectionName="Enter Keys" DefaultPause="0" LineNumber="31" PauseBeforeExeucution="false" CommandEnabled="true" v_WindowName="将打印输出另存为" v_CheckMethod="" v_WaitTimeForWindow="20" v_WindowNameResult="" v_WindowHandleResult="" v_CaseSensitive="" v_TrimBeforeCheck="" v_SelectionMethod="" v_TargetWindowIndex="0" v_WaitTimeBetweenFindAndAction="0" v_ActivateBeforeAction="Yes" v_TextToSend="C:\Users\34029\Desktop\result.pdf" v_EncryptionOption="" v_UseClipBoard="" v_WaitTimeAfterKeyEnter="60" v_ActivateCurrentWindow="" v_ClearClipboardAfterPaste="" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="EnterKeysCommand" CommandID="5db6353d-bf24-442b-8520-012420299c0e" CommandName="EnterKeysCommand" IsCommented="false" SelectionName="Enter Keys" DefaultPause="0" LineNumber="32" PauseBeforeExeucution="false" CommandEnabled="true" v_WindowName="将打印输出另存为" v_CheckMethod="" v_WaitTimeForWindow="20" v_WindowNameResult="" v_WindowHandleResult="" v_CaseSensitive="" v_TrimBeforeCheck="" v_SelectionMethod="" v_TargetWindowIndex="0" v_WaitTimeBetweenFindAndAction="0" v_ActivateBeforeAction="Yes" v_TextToSend="{ENTER}" v_EncryptionOption="" v_UseClipBoard="" v_WaitTimeAfterKeyEnter="60" v_ActivateCurrentWindow="" v_ClearClipboardAfterPaste="" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="MoveMouseCommand" CommandID="af7f63b3-3af3-4a7a-a0c5-2fd7facafa56" CommandName="MoveMouseCommand" IsCommented="false" SelectionName="Move Mouse" DefaultPause="0" LineNumber="33" PauseBeforeExeucution="false" CommandEnabled="true" v_XMousePosition="1910" v_YMousePosition="40" v_MouseClick="" v_WaitTimeAfterClick="60" v_IgnoreWaitTime="Yes" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="ClickMouseCommand" CommandID="45b2685e-d555-49fb-bee6-48bb6ccb3b54" CommandName="ClickMouseCommand" IsCommented="false" SelectionName="Click Mouse" DefaultPause="0" LineNumber="34" PauseBeforeExeucution="false" CommandEnabled="true" v_MouseClick="Left Click" v_WaitTimeAfterClick="60" v_IgnoreWaitTime="No" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="EnterKeysCommand" CommandID="164ff187-9d90-442d-b57a-5e0729f1db94" CommandName="EnterKeysCommand" IsCommented="false" SelectionName="Enter Keys" DefaultPause="0" LineNumber="35" PauseBeforeExeucution="false" CommandEnabled="true" v_WindowName="OMNIC - [Window1]" v_CheckMethod="" v_WaitTimeForWindow="20" v_WindowNameResult="" v_WindowHandleResult="" v_CaseSensitive="" v_TrimBeforeCheck="" v_SelectionMethod="" v_TargetWindowIndex="0" v_WaitTimeBetweenFindAndAction="0" v_ActivateBeforeAction="Yes" v_TextToSend="^{DELETE}" v_EncryptionOption="" v_UseClipBoard="" v_WaitTimeAfterKeyEnter="60" v_ActivateCurrentWindow="" v_ClearClipboardAfterPaste="" />
+    </ScriptAction>
+    <ScriptAction>
+      <ScriptCommand xsi:type="CloseOneWindowCommand" CommandID="99104a32-3f82-4fc9-ba11-f6ba1e5cdc4b" CommandName="CloseOneWindowCommand" IsCommented="false" SelectionName="Close One Window" DefaultPause="0" LineNumber="36" PauseBeforeExeucution="false" CommandEnabled="true" v_WindowName="OMNIC - [检索]" v_CheckMethod="" v_WaitTimeForWindow="20" v_WindowNameResult="" v_WindowHandleResult="" v_CaseSensitive="" v_TrimBeforeCheck="" v_SelectionMethod="" v_TargetWindowIndex="0" v_WaitTimeBetweenFindAndAction="1" v_ActivateBeforeAction="" />
+    </ScriptAction>
+  </Commands>
+  <Info>
+    <TasktVersion>3.5.2.52</TasktVersion>
+    <Author />
+    <LastRunTime>2026-03-02T09:43:25.366562+08:00</LastRunTime>
+    <RunTimes>3</RunTimes>
+    <Revision>22</Revision>
+    <ScriptVersion>0.0.0</ScriptVersion>
+    <Description />
+  </Info>
+  <Variables />
+</Script>
