@@ -41,12 +41,12 @@ Client_Server/backend/storage/
 Client_Server/backend/.env
 Client_Server/frontend/node_modules/
 Client_Server/frontend/dist/
+Client_Server/plan.md
+Client_Server/plan.pdf
 
 # ======== Shared Storage / Output (Optional, depending on your needs) ========
 # Ignore generated output files in Demo
 Code/Demo/*/
-# Or keep Demo but ignore work_dir?
-Code/Demo/*/work_dir/
 
 # Ignore shared_storage runtime task files
 shared_storage/tasks/*/*
