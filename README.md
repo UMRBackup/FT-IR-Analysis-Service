@@ -1,5 +1,7 @@
 # FT-IR AI Analysis Report Generator & Service (红外光谱分析与报告生成系统)
 
+[English](README_en.md) | [简体中文](README.md)
+
 本项目是一套完整的自动化的红外光谱（FT-IR）图像识别、数据处理与智能诊断报告生成系统。
 不仅包含了底层核心的**CV提取、RPA自动化与大模型报告生成流水线**，还外装了一套基于 Web 的**任务分发与异步执行平台 (B/S架构)**，使得批量检测与云端/局域网联机使用成为可能。
 
