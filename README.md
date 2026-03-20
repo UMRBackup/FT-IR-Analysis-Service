@@ -43,7 +43,14 @@ This project supports two running environments: **A. As a Distributed Web Servic
 
 The system breaks down jobs into a three-stage serial chain (`preprocess -> rpa -> postprocess`), with frontend states reflecting `queued -> preprocessing -> rpa_running -> postprocessing -> done/failed`.
 
-**Step 1: Start the Base Service (MySQL + FastAPI)**
+Recommended production topology:
+
+- **Container side (Linux/Docker)**: run `api + mysql + pre/post worker` for preprocessing and postprocessing.
+- **Windows remote side (one or more machines)**: run `rpa worker` only for OMNIC automation.
+
+This allows horizontal scaling of RPA workers while keeping CPU-bound pre/post stages inside containers.
+
+**Step 1: Start Base Services (MySQL + FastAPI + pre/post worker)**
 
 It is recommended to deploy via Docker:
 ```bash
@@ -52,9 +59,34 @@ docker compose up -d --build
 ```
 *Tip: If required by LLMs (e.g., `OPENROUTER_API_KEY`), please configure your system environment variables on the host machine before executing `docker compose up`.*
 
-**Step 2: Start the Local Celery Worker (Core RPA Runtime)**
+**Step 2: Start RPA Workers on one or multiple Windows machines (rpa_queue only)**
 
-This MUST be started in a native Windows environment where OMNIC is present.
+This MUST run in a native Windows environment where OMNIC is installed (not inside Linux/Docker).
+
+If the worker runs on another machine, satisfy these 4 rules first:
+
+1. **Use the same physical shared directory**: both API host and worker machine must mount the same network share, for example as `Y:\shared_storage`.
+2. **Keep drive mapping consistent when possible**: current `docker-compose.yml` uses `Y:\shared_storage:/shared`, so the API host needs `Y:` and the worker should preferably use the same drive letter to avoid path drift.
+3. **Do not use localhost for DB/Broker on remote worker**: in worker-side `.env`, set `DATABASE_URL / CELERY_BROKER_URL / CELERY_RESULT_BACKEND` host to API host IP.
+4. **Open firewall/network path**: worker must reach API host port `3307` (MySQL is used as DB + Celery broker/result backend).
+
+Example mapping command on Windows (run on both machines, point to the same share):
+```powershell
+net use Y: \\<fileserver>\ftir_shared /persistent:yes
+```
+
+Recommended minimum `Client_Server/backend/.env` on the worker machine:
+```env
+CODE_ROOT=C:\path\to\IR-Project\Code
+STORAGE_ROOT=Y:\shared_storage
+SHARED_STORAGE_ROOT=Y:\shared_storage
+
+DATABASE_URL=mysql+pymysql://ftir:ftir@<API_HOST_IP>:3307/ftir
+CELERY_BROKER_URL=sqla+mysql+pymysql://ftir:ftir@<API_HOST_IP>:3307/ftir
+CELERY_RESULT_BACKEND=db+mysql+pymysql://ftir:ftir@<API_HOST_IP>:3307/ftir
+```
+
+Then start on each Windows worker machine:
 ```powershell
 cd Client_Server\backend
 .venv\Scripts\activate
@@ -62,8 +94,12 @@ pip install -r requirements.txt
 pip install -r ..\..\Code\requirements.txt
 
 # Force single-process mode (-P solo) to avoid OMNIC UI conflicts
-celery -A app.celery_app:celery_app worker --loglevel=info -P solo -Q preprocess_queue,rpa_queue,postprocess_queue
+celery -A app.celery_app:celery_app worker --loglevel=info -P solo -Q rpa_queue
 ```
+
+> Note: On Windows, the default pool may trigger `fast_trace_task` related failures. The code already enforces `solo` on Windows, and keeping `-P solo` in command is still recommended.
+>
+> Scaling: start worker #2/#3/... with the same command on additional Windows machines; Celery distributes jobs across all workers subscribed to `rpa_queue`.
 
 **Step 3: Start the Frontend**
 
@@ -106,5 +142,11 @@ python pipeline.py Demo/7343-3.CSV ./output
 
 ## ⚠️ Notes & Roadmap
 
-1. The `shared_storage` directory bridges the containerized FastAPI (where uploads go) and the local Windows Celery Worker (which processes data and outputs reports). Both read and write to this relative mutual path.
-2. Future plans include implementing an **authorization/account system** (to protect LAN API dispatch) and **health check monitoring** (automatically restart mechanics if an unexpected OMNIC pop-up blocks the RPA thread).
+1. `shared_storage` is the data bridge between API and worker. In cross-machine deployment, both sides must point to the **same network share**, otherwise workers may fail with missing input/output files.
+2. Worker machine should install both `backend/requirements.txt` and `Code/requirements.txt`; missing either can break RPA or postprocess stages.
+3. Minimal connectivity checklist:
+	- On API host, run `docker compose ps` and confirm `mysql` + `api` are healthy/running.
+	- On API host, also confirm `worker_prepost` is running.
+	- On worker machine, run `Test-NetConnection <API_HOST_IP> -Port 3307`.
+	- After Windows worker starts, logs should show subscription to `rpa_queue`.
+4. Future plans include **authorization/account system** (secure LAN dispatch) and **health monitoring** (alert/recover when OMNIC popups block RPA flow).
