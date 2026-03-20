@@ -1,5 +1,5 @@
 import os
-from serpapi import GoogleSearch
+import serpapi
 
 try:
     SERP_API_KEY: str = os.environ["SERP_API_KEY"]
@@ -16,11 +16,11 @@ def search_literature_and_cite(keyword, max_results=3):
         "engine": "google_scholar",
         "q": keyword,
         "hl": "en",
-        "api_key": SERP_API_KEY
     }
 
-    search = GoogleSearch(search_params)
-    results = search.get_dict()
+    client = serpapi.Client(api_key=SERP_API_KEY)
+
+    results = client.search(search_params)
     organic_results = results.get("organic_results", [])
 
     citations = []
@@ -34,10 +34,9 @@ def search_literature_and_cite(keyword, max_results=3):
         cite_params = {
             "engine": "google_scholar_cite",
             "q": result_id,
-            "api_key": SERP_API_KEY
         }
-        cite_search = GoogleSearch(cite_params)
-        cite_results = cite_search.get_dict()
+        cite_search = client.search(cite_params)
+        cite_results = cite_search.get("cite_results", {})
 
         # 提取 APA 格式
         apa_snippet = None
