@@ -6,7 +6,6 @@ import time
 from image_processing.curve_dye import dye_curve_blue
 from image_processing.extract import extract_to_csv
 from image_processing.pretreat import preprocess_image
-from software_agent.ir_rpa import OmnicRpa
 from report_generator.generator import generate_report
 
 
@@ -119,6 +118,10 @@ def run_rpa_stage(
     omnic_pdf: str,
     omnic_exe: str = r"C:\Program Files (x86)\Omnic\omnic32.exe",
 ) -> str:
+    # Delay Windows-only dependency import so Linux workers can still import
+    # this module for preprocess/postprocess tasks.
+    from software_agent.ir_rpa import OmnicRpa
+
     output_csv = os.path.abspath(output_csv)
     omnic_pdf = os.path.abspath(omnic_pdf)
     os.makedirs(os.path.dirname(omnic_pdf), exist_ok=True)

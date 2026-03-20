@@ -43,7 +43,14 @@ IR-Project/
 
 系统已被编排为三段串接任务链 (`preprocess -> rpa -> postprocess`)，前端状态机包含 `queued -> preprocessing -> rpa_running -> postprocessing -> done/failed` 等。
 
-**步骤 1：启动基础服务 (MySQL + FastAPI)**
+推荐的生产拓扑：
+
+- **容器侧（Linux/Docker）**：运行 `api + mysql + pre/post worker`，专职做预处理和后处理。
+- **Windows 异机侧（可多台）**：仅运行 `rpa worker`，专职执行 OMNIC 自动化。
+
+这样可以横向增加多台 RPA worker 提升吞吐，同时把 CPU 型预/后处理固定在容器侧。
+
+**步骤 1：启动基础服务（MySQL + FastAPI + pre/post worker）**
 
 建议通过 Docker 快速启动：
 ```bash
@@ -52,9 +59,34 @@ docker compose up -d --build
 ```
 *提示：如果有大模型环境变量所需的 KEY (如 `OPENROUTER_API_KEY`)，请先在宿主机的系统环境变量配置再执行 `docker compose up`。*
 
-**步骤 2：启动本机的 Celery Worker (核心 RPA 算力挂载)**
+**步骤 2：在一台或多台 Windows 机器启动 RPA Worker（仅消费 rpa_queue）**
 
-必须在有 OMNIC 的 Windows 原生环境下启动。
+必须在有 OMNIC 的 Windows 原生环境下启动（不能放在 Linux 容器中）。
+
+如果 Worker 部署在另一台机器，请先满足下面 4 条：
+
+1. **共享目录必须是同一份物理目录**：API 宿主机与 Worker 机器要同时挂载到同一个网络共享，例如都映射为 `Y:\shared_storage`。
+2. **共享盘符建议一致**：当前 `docker-compose.yml` 使用 `Y:\shared_storage:/shared`，因此 API 宿主机至少要有 `Y:`；Worker 端也建议使用同名盘符避免配置混淆。
+3. **数据库地址不能用 localhost**：Worker 在异机时，`DATABASE_URL / CELERY_BROKER_URL / CELERY_RESULT_BACKEND` 里的主机名要改成 API 宿主机 IP。
+4. **防火墙放通端口**：至少保证 Worker 到 API 宿主机的 `3307` 端口可达（MySQL 同时承担 Celery broker/result backend）。
+
+可参考 Windows 映射命令（两台机器都执行，映射到同一共享）：
+```powershell
+net use Y: \\<fileserver>\ftir_shared /persistent:yes
+```
+
+Worker 机器上的 `Client_Server/backend/.env` 建议至少包含：
+```env
+CODE_ROOT=C:\path\to\IR-Project\Code
+STORAGE_ROOT=Y:\shared_storage
+SHARED_STORAGE_ROOT=Y:\shared_storage
+
+DATABASE_URL=mysql+pymysql://ftir:ftir@<API_HOST_IP>:3307/ftir
+CELERY_BROKER_URL=sqla+mysql+pymysql://ftir:ftir@<API_HOST_IP>:3307/ftir
+CELERY_RESULT_BACKEND=db+mysql+pymysql://ftir:ftir@<API_HOST_IP>:3307/ftir
+```
+
+然后在每台 Worker 机器启动：
 ```powershell
 cd Client_Server\backend
 .venv\Scripts\activate
@@ -62,8 +94,12 @@ pip install -r requirements.txt
 pip install -r ..\..\Code\requirements.txt
 
 # 强制单进程模式 (-P solo) 避让 OMNIC 的界面独占与防错
-celery -A app.celery_app:celery_app worker --loglevel=info -P solo -Q preprocess_queue,rpa_queue,postprocess_queue
+celery -A app.celery_app:celery_app worker --loglevel=info -P solo -Q rpa_queue
 ```
+
+> 说明：Windows 下默认进程池可能触发 `fast_trace_task` 相关报错，已在代码侧对 Windows 强制 `solo`，命令中也建议保留 `-P solo`。
+>
+> 扩容方式：按同样配置启动第 2/3/... 台 Windows worker（都订阅 `rpa_queue`），Celery 会在这些 worker 间分发 RPA 任务，实现并行处理。
 
 **步骤 3：启动前端与访问**
 
@@ -106,5 +142,11 @@ python pipeline.py Demo/7343-3.CSV ./output
 
 ## ⚠️ 须知与未来计划
 
-1. 本地的 `shared_storage` 用于连接处于容器内的 FastAPI （用来放图）和局域网内的 Windows Celery Worker（处理图并吐出报告）。两方都读写这个相对位置以达到文件一致映射。
-2. 未来计划加入 **权限控制/账户化系统**（保护局域网分发的接口安全）、**健康检查监控**（如果 OMNIC 意外弹窗导致 RPA 阻塞能及时报警重启机制）。
+1. `shared_storage` 是 API 与 Worker 的数据交换桥。若为跨机器部署，请确保两端指向**同一个网络共享目录**，否则会出现“任务已入队但 Worker 找不到输入文件”。
+2. Worker 需要同时安装 `backend/requirements.txt` 与 `Code/requirements.txt`，否则 RPA/后处理阶段可能因依赖缺失失败。
+3. 最小联通性自检：
+	- API 宿主机执行 `docker compose ps` 确认 `mysql` 与 `api` 运行中。
+	- API 宿主机执行 `docker compose ps` 确认 `worker_prepost` 也在运行。
+	- Worker 机器执行 `Test-NetConnection <API_HOST_IP> -Port 3307` 确认数据库端口可达。
+	- Windows Worker 启动后日志应显示仅订阅 `rpa_queue`。
+4. 未来计划加入 **权限控制/账户化系统**（保护局域网分发接口安全）、**健康检查监控**（OMNIC 弹窗阻塞时自动告警与恢复）。
