@@ -26,7 +26,7 @@ services:
     volumes:
       - ./backend:/app
       - ../Code:/code
-      - ./shared_storage:/shared
+      - Y:\shared_storage:/shared
     environment:
       CODE_ROOT: /code
       STORAGE_ROOT: /shared
