@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Callable
 
 from .config import settings
-from .shared_paths import resolve_shared_path, to_shared_rel_path
+from .shared_paths import resolve_shared_path, shared_root, to_shared_rel_path
 
 
 def _ensure_code_root_importable() -> None:
@@ -70,6 +70,51 @@ def _relativize_result_paths(result: dict[str, object]) -> dict[str, object]:
     return converted
 
 
+def _assert_preprocess_output(
+    *,
+    image_path: Path,
+    output_dir: Path,
+    result: dict[str, object],
+) -> None:
+    output_csv = result.get("output_csv")
+    if not isinstance(output_csv, str) or not output_csv.strip():
+        raise ValueError("Preprocess self-check failed: missing output_csv in stage result")
+
+    resolved_csv = resolve_shared_path(output_csv)
+    if not resolved_csv.exists():
+        raise FileNotFoundError(
+            "Preprocess self-check failed: output_csv not found. "
+            f"csv={resolved_csv}; shared_root={shared_root()}"
+        )
+
+    if resolved_csv.parent != output_dir:
+        raise ValueError(
+            "Preprocess self-check failed: output_csv parent does not match task output_dir. "
+            f"csv_parent={resolved_csv.parent}; expected_output_dir={output_dir}"
+        )
+
+    if image_path.suffix.lower() == ".csv" and resolved_csv.stat().st_size == 0:
+        raise ValueError(
+            "Preprocess self-check failed: copied CSV is empty. "
+            f"csv={resolved_csv}"
+        )
+
+
+def _assert_rpa_input_csv(output_csv: str) -> Path:
+    resolved_csv_path = resolve_shared_path(output_csv)
+    if not resolved_csv_path.exists():
+        raise FileNotFoundError(
+            "RPA self-check failed: output_csv not found before RPA stage. "
+            f"csv={resolved_csv_path}; shared_root={shared_root()}"
+        )
+    if resolved_csv_path.stat().st_size == 0:
+        raise ValueError(
+            "RPA self-check failed: output_csv is empty before RPA stage. "
+            f"csv={resolved_csv_path}"
+        )
+    return resolved_csv_path
+
+
 def run_preprocess_stage_with_stream(
     image_path: str,
     output_dir: str,
@@ -92,8 +137,16 @@ def run_preprocess_stage_with_stream(
     )
     if not isinstance(result, dict):
         raise ValueError("run_preprocess_stage should return a dict")
+
+    converted_result = _relativize_result_paths(result)
+    _assert_preprocess_output(
+        image_path=resolved_image_path,
+        output_dir=resolved_output_dir,
+        result=converted_result,
+    )
+
     _emit_logs(logs, on_log, floor=10, span=25)
-    return _relativize_result_paths(result)
+    return converted_result
 
 
 def run_rpa_stage_with_stream(
@@ -103,7 +156,7 @@ def run_rpa_stage_with_stream(
 ) -> dict:
     _ensure_code_root_importable()
 
-    resolved_csv_path = resolve_shared_path(output_csv)
+    resolved_csv_path = _assert_rpa_input_csv(output_csv)
     resolved_omnic_pdf = resolve_shared_path(omnic_pdf)
     resolved_omnic_pdf.parent.mkdir(parents=True, exist_ok=True)
 
