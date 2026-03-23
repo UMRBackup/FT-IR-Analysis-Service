@@ -39,7 +39,7 @@ IR-Project/
 本项目支持两套运行环境：**A. 作为分布式 Web 服务运行** 以及 **B. 作为本地独立软件运行**。
 *(注：不论哪种方案，由于涉及 RPA 控制，运行它的物理主机/Worker机必须处于 Windows 桌面环境并安装了 OMNIC 软件)*
 
-### 方案 A：Web 客户端与异步服务端运行 
+### 方案 A：Web 客户端与异步服务端运行
 
 系统已被编排为三段串接任务链 (`preprocess -> rpa -> postprocess`)，前端状态机包含 `queued -> preprocessing -> rpa_running -> postprocessing -> done/failed` 等。
 
@@ -122,7 +122,7 @@ npm run dev
 
 ### 方案 B：本地独立运行
 
-如果只需要单机、单任务快速排查或验证算法逻辑，推荐使用原生的本地运行方式。
+如果只需要单机、单任务快速排查或验证算法逻辑，可以使用原生的本地运行方式。
 
 **环境准备**
 
@@ -152,8 +152,8 @@ python pipeline.py Demo/7343-3.CSV ./output
 
 ## ⚠️ 注意事项与未来计划
 
-1. `shared_storage` 是 API 与 Worker 的数据交换桥。若为跨机器部署，请确保两端指向**同一个网络共享目录**，否则会出现“任务已入队但 Worker 找不到输入文件”。
-2. Worker 需要同时安装 `backend/requirements.txt` 与 `Code/requirements.txt`，否则 RPA/后处理阶段可能因依赖缺失失败。
+1. `shared_storage` 负责 API 与 Worker 的数据交换。若为跨机器部署，请统一两端指向，否则 Worker 找不到输入/输出文件。
+2. Worker 也需要安装 `backend/requirements.txt`，否则可能因依赖缺失失败。
 3. 最小联通性自检：
    - API 宿主机执行 `docker compose ps` 确认 `mysql` 与 `api` 运行中。
    - API 宿主机执行 `docker compose ps` 确认 `worker_prepost` 也在运行。

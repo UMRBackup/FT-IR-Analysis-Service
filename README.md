@@ -120,7 +120,7 @@ Afterward, simply visit the frontend URL in your browser to dispatch and monitor
 
 ---
 
-### Option B: Standalone Local App (Portable Usage Scenario)
+### Option B: Standalone Local App
 
 If you only need to process single tasks on a local machine without starting a web platform.
 
@@ -152,11 +152,11 @@ python pipeline.py Demo/7343-3.CSV ./output
 
 ## ⚠️ Notes & Roadmap
 
-1. `shared_storage` is the data bridge between API and worker. In cross-machine deployment, both sides must point to the **same network share**, otherwise workers may fail with missing input/output files.
-2. Worker machine should install both `backend/requirements.txt` and `Code/requirements.txt`; missing either can break RPA or postprocess stages.
+1. `shared_storage` is the data bridge between API and worker. In cross-machine deployment, both sides must point to the same network share, otherwise workers may fail with missing input/output files.
+2. Worker machine should also install `backend/requirements.txt`; missing requirements can break RPA stage.
 3. Minimal connectivity checklist:
    - On API host, run `docker compose ps` and confirm `mysql` + `api` are healthy/running.
    - On API host, also confirm `worker_prepost` is running.
    - On worker machine, run `Test-NetConnection <API_HOST_IP> -Port 3307`.
    - After Windows worker starts, logs should show subscription to `rpa_queue`.
-4. The future plan is **authorization/account system** (secure dispatch). Temporarily administration is allocated to all users for the project is still at internal test stage.
+4. The future plan is to integrate **authorization/account system** (secure dispatch). Temporarily administration is allocated to all users for the project is still at internal test stage.
