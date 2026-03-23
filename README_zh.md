@@ -53,10 +53,12 @@ IR-Project/
 **步骤 1：启动基础服务（MySQL + FastAPI + pre/post worker）**
 
 建议通过 Docker 快速启动：
+
 ```bash
 cd Client_Server
 docker compose up -d --build
 ```
+
 *提示：如果有大模型环境变量所需的 KEY (如 `OPENROUTER_API_KEY`)，请先在宿主机的系统环境变量配置再执行 `docker compose up`。*
 
 **步骤 2：在一台或多台 Windows 机器启动 RPA Worker（仅消费 rpa_queue）**
@@ -66,16 +68,18 @@ docker compose up -d --build
 如果 Worker 部署在另一台机器，请先满足下面 4 条：
 
 1. **共享目录必须是同一份物理目录**：API 宿主机与 Worker 机器要同时挂载到同一个网络共享，例如都映射为 `Y:\shared_storage`。
-2. **共享盘符建议一致**：当前 `docker-compose.yml` 使用 `Y:\shared_storage:/shared`，因此 API 宿主机至少要有 `Y:`；Worker 端也建议使用同名盘符避免配置混淆。
+2. **共享盘符建议一致**：Worker 端和API宿主机建议使用同名盘符避免配置混淆。
 3. **数据库地址不能用 localhost**：Worker 在异机时，`DATABASE_URL / CELERY_BROKER_URL / CELERY_RESULT_BACKEND` 里的主机名要改成 API 宿主机 IP。
 4. **防火墙放通端口**：至少保证 Worker 到 API 宿主机的 `3307` 端口可达（MySQL 同时承担 Celery broker/result backend）。
 
 可参考 Windows 映射命令（两台机器都执行，映射到同一共享）：
+
 ```powershell
 net use Y: \\<fileserver>\ftir_shared /persistent:yes
 ```
 
 Worker 机器上的 `Client_Server/backend/.env` 建议至少包含：
+
 ```env
 CODE_ROOT=C:\path\to\IR-Project\Code
 STORAGE_ROOT=Y:\shared_storage
@@ -87,6 +91,7 @@ CELERY_RESULT_BACKEND=db+mysql+pymysql://ftir:ftir@<API_HOST_IP>:3307/ftir
 ```
 
 然后在每台 Worker 机器启动：
+
 ```powershell
 cd Client_Server\backend
 .venv\Scripts\activate
@@ -104,11 +109,13 @@ celery -A app.celery_app:celery_app worker --loglevel=info -P solo -Q rpa_queue
 **步骤 3：启动前端与访问**
 
 在该机器（或局域网机器）上启动前端测试：
+
 ```bash
 cd Client_Server\frontend
 npm install
 npm run dev
 ```
+
 之后只需打开浏览器访问前端控制台地址即可进行在线调用与批量派发操作。
 
 ---
@@ -118,6 +125,7 @@ npm run dev
 如果你只需要单机、单任务快速排查或验证算法逻辑，推荐使用原生的本地运行方式。
 
 **环境准备**
+
 ```bash
 cd Code
 python -m venv .venv
@@ -127,11 +135,13 @@ pip install -r requirements.txt
 
 **使用图形界面 (GUI)**
 一键调出处理面板框，实时展示日志：
+
 ```bash
 python run_gui.py
 ```
 
 **使用命令行接口 (CLI)**
+
 ```bash
 # 格式：python pipeline.py <输入文件> [输出目录]
 python pipeline.py Demo/test_image.jpg ./output
@@ -145,8 +155,8 @@ python pipeline.py Demo/7343-3.CSV ./output
 1. `shared_storage` 是 API 与 Worker 的数据交换桥。若为跨机器部署，请确保两端指向**同一个网络共享目录**，否则会出现“任务已入队但 Worker 找不到输入文件”。
 2. Worker 需要同时安装 `backend/requirements.txt` 与 `Code/requirements.txt`，否则 RPA/后处理阶段可能因依赖缺失失败。
 3. 最小联通性自检：
-	- API 宿主机执行 `docker compose ps` 确认 `mysql` 与 `api` 运行中。
-	- API 宿主机执行 `docker compose ps` 确认 `worker_prepost` 也在运行。
-	- Worker 机器执行 `Test-NetConnection <API_HOST_IP> -Port 3307` 确认数据库端口可达。
-	- Windows Worker 启动后日志应显示仅订阅 `rpa_queue`。
+   - API 宿主机执行 `docker compose ps` 确认 `mysql` 与 `api` 运行中。
+   - API 宿主机执行 `docker compose ps` 确认 `worker_prepost` 也在运行。
+   - Worker 机器执行 `Test-NetConnection <API_HOST_IP> -Port 3307` 确认数据库端口可达。
+   - Windows Worker 启动后日志应显示仅订阅 `rpa_queue`。
 4. 未来计划加入 **权限控制/账户化系统**（保护局域网分发接口安全）、**健康检查监控**（OMNIC 弹窗阻塞时自动告警与恢复）。

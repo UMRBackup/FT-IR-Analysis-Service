@@ -26,7 +26,7 @@ services:
     volumes:
       - ./backend:/app
       - ../Code:/code
-      - Y:\shared_storage:/shared
+      - nas_shared:/shared
     environment:
       CODE_ROOT: /code
       STORAGE_ROOT: /shared
@@ -56,7 +56,7 @@ services:
     volumes:
       - ./backend:/app
       - ../Code:/code
-      - Y:\shared_storage:/shared
+      - nas_shared:/shared
     environment:
       CODE_ROOT: /code
       STORAGE_ROOT: /shared
@@ -75,3 +75,9 @@ services:
 
 volumes:
   mysql_data:
+  nas_shared:
+    driver: local
+    driver_opts:
+      type: cifs
+      o: username=${NAS_USER},password=${NAS_PASS},vers=${NAS_VERS:-3.0},uid=0,gid=0,file_mode=0777,dir_mode=0777
+      device: "//${NAS_HOST:-192.168.1.77}/${NAS_SHARE:-zhaozhixuan/shared_storage}"
