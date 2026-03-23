@@ -21,6 +21,13 @@ class Settings(BaseSettings):
 
     rpa_queue_concurrency: int = 1
 
+    # Optional credentials used by Windows host processes to establish UNC sessions.
+    # These do not affect container-side CIFS mounts.
+    unc_username: str = ""
+    unc_password: str = ""
+    nas_user: str = ""
+    nas_pass: str = ""
+
     model_config = SettingsConfigDict(
         env_file=str(BACKEND_ROOT / ".env"),
         env_file_encoding="utf-8",

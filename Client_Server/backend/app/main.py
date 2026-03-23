@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import uuid
+from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
@@ -13,10 +15,20 @@ import shutil
 from .celery_app import celery_app
 from .config import settings
 from .schemas import LogEvent, TaskCreateResponse, TaskStatus, TaskStatusResponse
-from .shared_paths import resolve_shared_path, shared_root, to_shared_rel_path
+from .shared_paths import ensure_shared_root_ready, resolve_shared_path, shared_root, to_shared_rel_path
 from .state import TaskRecord, store
 
-app = FastAPI(title=settings.app_name)
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    root = ensure_shared_root_ready("api-startup")
+    logger.info("Shared root precheck passed: %s", root)
+    yield
+
+
+app = FastAPI(title=settings.app_name, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
