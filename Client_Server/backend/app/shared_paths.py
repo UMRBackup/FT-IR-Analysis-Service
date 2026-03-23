@@ -42,6 +42,13 @@ def _connect_unc_share(share_root: str, username: str, password: str) -> None:
         raise RuntimeError(f"UNC authentication failed for {share_root}: {detail}")
 
 
+def _path_exists(path: Path) -> bool:
+    try:
+        return path.exists()
+    except OSError:
+        return False
+
+
 def _ensure_windows_unc_access(root: Path) -> None:
     if os.name != "nt":
         return
@@ -54,10 +61,10 @@ def _ensure_windows_unc_access(root: Path) -> None:
     if not share_root:
         return
 
-    if share_root in _UNC_AUTH_CACHE and root.exists():
+    if share_root in _UNC_AUTH_CACHE and _path_exists(root):
         return
 
-    if root.exists():
+    if _path_exists(root):
         _UNC_AUTH_CACHE.add(share_root)
         return
 
@@ -65,7 +72,7 @@ def _ensure_windows_unc_access(root: Path) -> None:
     password = settings.unc_password or settings.nas_pass
     if username and password:
         _connect_unc_share(share_root, username, password)
-        if root.exists():
+        if _path_exists(root):
             _UNC_AUTH_CACHE.add(share_root)
             return
 
@@ -77,10 +84,16 @@ def _ensure_windows_unc_access(root: Path) -> None:
     )
 
 
+def _resolve_path_with_unc_access(path: Path) -> Path:
+    _ensure_windows_unc_access(path)
+    try:
+        return path.resolve()
+    except OSError as exc:
+        raise RuntimeError(f"Shared path resolve failed after UNC precheck: {path}") from exc
+
+
 def shared_root() -> Path:
-    root = settings.shared_storage_root.resolve()
-    _ensure_windows_unc_access(root)
-    return root
+    return _resolve_path_with_unc_access(settings.shared_storage_root)
 
 
 def ensure_shared_root_ready(context: str = "startup") -> Path:
@@ -110,12 +123,12 @@ def ensure_shared_root_ready(context: str = "startup") -> Path:
 def resolve_shared_path(path_or_rel: str) -> Path:
     candidate = Path(path_or_rel)
     if candidate.is_absolute():
-        return candidate
-    return (shared_root() / candidate).resolve()
+        return _resolve_path_with_unc_access(candidate)
+    return _resolve_path_with_unc_access(shared_root() / candidate)
 
 
 def to_shared_rel_path(path_or_abs: str | Path) -> str:
-    absolute = Path(path_or_abs).resolve()
+    absolute = _resolve_path_with_unc_access(Path(path_or_abs))
     root = shared_root()
     try:
         return absolute.relative_to(root).as_posix()

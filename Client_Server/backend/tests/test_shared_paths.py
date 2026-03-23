@@ -1,0 +1,43 @@
+from pathlib import Path
+import sys
+
+
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
+if str(BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(BACKEND_ROOT))
+
+from app import shared_paths
+
+
+def test_shared_root_authenticates_before_resolve(monkeypatch):
+    configured_root = Path(r"\\192.168.1.77\zhaozhixuan\shared_storage")
+    calls: list[tuple[str, str]] = []
+
+    monkeypatch.setattr(shared_paths.settings, "shared_storage_root", configured_root)
+
+    def fake_ensure(path: Path) -> None:
+        calls.append(("ensure", str(path)))
+
+    def fake_resolve(self: Path) -> Path:
+        calls.append(("resolve", str(self)))
+        return self
+
+    monkeypatch.setattr(shared_paths, "_ensure_windows_unc_access", fake_ensure)
+    monkeypatch.setattr(Path, "resolve", fake_resolve)
+
+    resolved = shared_paths.shared_root()
+
+    assert resolved == configured_root
+    assert calls == [
+        ("ensure", str(configured_root)),
+        ("resolve", str(configured_root)),
+    ]
+
+
+def test_path_exists_swallows_unc_oserror(monkeypatch):
+    def fake_exists(self: Path) -> bool:
+        raise OSError(1326, "用户名或密码不正确。")
+
+    monkeypatch.setattr(Path, "exists", fake_exists)
+
+    assert shared_paths._path_exists(Path(r"\\192.168.1.77\zhaozhixuan\shared_storage")) is False
