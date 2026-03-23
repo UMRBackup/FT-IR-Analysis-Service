@@ -22,6 +22,25 @@ class Coordinates:
 	print_dialog_2: tuple[int, int] = (1690, 1095)
 	clear_focus_click: tuple[int, int] = (1910, 40)
 
+
+SCREEN_COORDINATES: dict[tuple[int, int], Coordinates] = {
+	(1920, 1200): Coordinates(),
+	(1920, 1080): Coordinates(
+		drag_to=(512, 410),
+		shift_click=(290, 415),
+		button_b=(755, 670),
+		print_dialog_1=(1595, 980),
+		print_dialog_2=(1690, 980),
+	),
+}
+
+
+def detect_screen_coordinates(default: Coordinates | None = None) -> Coordinates:
+	default = default or Coordinates()
+	width = win32api.GetSystemMetrics(0)
+	height = win32api.GetSystemMetrics(1)
+	return SCREEN_COORDINATES.get((width, height), default)
+
 class OmnicRpa:
 	def __init__(
 		self,
@@ -35,7 +54,7 @@ class OmnicRpa:
 		self.omnic_exe = omnic_exe
 		self.csv_path = str(Path(csv_path).expanduser().resolve())
 		self.pdf_path = str(Path(pdf_path).expanduser().resolve())
-		self.coord = coord or Coordinates()
+		self.coord = coord or detect_screen_coordinates()
 		self.default_timeout = default_timeout
 		self.short_delay = short_delay
 		self.app: Application | None = None

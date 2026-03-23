@@ -35,8 +35,7 @@ def search_literature_and_cite(keyword, max_results=3):
             "engine": "google_scholar_cite",
             "q": result_id,
         }
-        cite_search = client.search(cite_params)
-        cite_results = cite_search.get("cite_results", {})
+        cite_results = client.search(cite_params)
 
         # 提取 APA 格式
         apa_snippet = None
@@ -57,6 +56,9 @@ def search_literature_and_cite(keyword, max_results=3):
 def main():
     keyword = input("请输入要检索的关键词：")
     citations = search_literature_and_cite(keyword)
+    if not citations or len(citations) == 0:
+        print("未找到相关文献信息。")
+        return
     for idx, citation in enumerate(citations, 1):
         print(f"{idx}. {citation['title']}")
         print(f"   Link: {citation['link']}")
