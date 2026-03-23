@@ -7,7 +7,7 @@ It includes the core engine for **Computer Vision (CV) extraction, Robotic Proce
 
 ## ✨ Key Features
 
-- **Multi-Modal Input Processing**: Supports direct input of FT-IR spectrum images (intelligently extracting coordinate points to CSV) as well as pre-exported CSV raw data files.
+- **Multi-Modal Input Processing**: Supports direct input of FT-IR spectrum images (testing feature) as well as pre-exported CSV raw data files (completed feature).
 - **Image Recognition & Extraction**: Incorporates CV-based pre-processing (`pretreat.py`), spectrum curve tracking/dyeing (`curve_dye.py`), and high-precision coordinate extraction (`extract.py`).
 - **Software Automation (RPA)**: Uses RPA scripts (`ir_rpa.py`) to automatically search, control the OMNIC desktop software in the background, and export analysis spectrum PDFs.
 - **AI Report Generation**: Combines the extracted curve characteristics and spectrum results to automatically typeset and generate formatted PDF/HTML diagnostic reports.
@@ -39,7 +39,7 @@ IR-Project/
 This project supports two running environments: **A. As a Distributed Web Service** and **B. As a Standalone Local App**.
 *(Note: Regardless of the strategy, because it involves RPA, the physical host running the RPA Worker must be running a Windows desktop environment with OMNIC software installed.)*
 
-### Option A: Web Client + Async Service (Recommended for Multi-user/Multi-task Scenarios)
+### Option A: Web Client + Async Service
 
 The system breaks down jobs into a three-stage serial chain (`preprocess -> rpa -> postprocess`), with frontend states reflecting `queued -> preprocessing -> rpa_running -> postprocessing -> done/failed`.
 
@@ -59,7 +59,7 @@ cd Client_Server
 docker compose up -d --build
 ```
 
-*Tip: If required by LLMs (e.g., `OPENROUTER_API_KEY`), please configure your system environment variables on the host machine before executing `docker compose up`.*
+*Tip: For the requirement of API Keys (Openrouter, Dashscope, CAS, SerpAPI already in use), please configure your system environment variables on the host machine or modify in compose file before executing `docker compose up`.*
 
 **Step 2: Start RPA Workers on one or multiple Windows machines (rpa_queue only)**
 
@@ -69,7 +69,7 @@ If the worker runs on another machine, satisfy these 4 rules first:
 
 1. **Use the same physical shared directory**: both API host and worker machine must mount the same network share, for example as `Y:\shared_storage`.
 2. **Keep drive mapping consistent when possible**:  the worker should preferably use the same drive letter as the API host to avoid path drift.
-3. **Do not use localhost for DB/Broker on remote worker**: in worker-side `.env`, set `DATABASE_URL / CELERY_BROKER_URL / CELERY_RESULT_BACKEND` host to API host IP.
+3. **DB/Broker IP configuration**: in worker-side `.env`, set `DATABASE_URL / CELERY_BROKER_URL / CELERY_RESULT_BACKEND` host to API host IP.
 4. **Open firewall/network path**: worker must reach API host port `3307` (MySQL is used as DB + Celery broker/result backend).
 
 Example mapping command on Windows (run on both machines, point to the same share):
@@ -159,4 +159,4 @@ python pipeline.py Demo/7343-3.CSV ./output
    - On API host, also confirm `worker_prepost` is running.
    - On worker machine, run `Test-NetConnection <API_HOST_IP> -Port 3307`.
    - After Windows worker starts, logs should show subscription to `rpa_queue`.
-4. Future plans include **authorization/account system** (secure LAN dispatch) and **health monitoring** (alert/recover when OMNIC popups block RPA flow).
+4. The future plan is **authorization/account system** (secure dispatch). Temporarily administration is allocated to all users for the project is still at internal test stage.

@@ -7,7 +7,7 @@
 
 ## ✨ 主要功能特性
 
-- **多模态输入处理**：支持直接输入红外光谱图像（智能提取曲线坐标点阵并转化为CSV），也支持直接处理预先导出的 CSV 原始数据文件。
+- **多模态输入处理**：支持直接输入红外光谱图像（功能测试中），也支持直接处理预先导出的 CSV 原始数据文件（已完善）。
 - **图像识别与提取**：包含基于计算机视觉的预处理 (`pretreat.py`)、光谱曲线染色 (`curve_dye.py`) 和高精度提取 (`extract.py`)。
 - **软件自动化控制 (RPA)**：通过 RPA 脚本 (`ir_rpa.py`) 在后台自动化检索、操控 OMNIC 桌面软件并导出分析图谱 PDF。
 - **AI 报告生成**：结合抓取的曲线数字特征与图谱结果，自动排版并生成格式化的 PDF/HTML 诊断报告。
@@ -37,29 +37,29 @@ IR-Project/
 ## 🚀 启动与运行方案
 
 本项目支持两套运行环境：**A. 作为分布式 Web 服务运行** 以及 **B. 作为本地独立软件运行**。
-*(注：不论哪种方案，由于涉及 RPA 控制，运行它的物理主机必须处于 Windows 桌面环境并安装了 OMNIC 软件)*
+*(注：不论哪种方案，由于涉及 RPA 控制，运行它的物理主机/Worker机必须处于 Windows 桌面环境并安装了 OMNIC 软件)*
 
-### 方案 A：Web 客户端与异步服务端运行 (推荐多人/多任务场景)
+### 方案 A：Web 客户端与异步服务端运行 
 
 系统已被编排为三段串接任务链 (`preprocess -> rpa -> postprocess`)，前端状态机包含 `queued -> preprocessing -> rpa_running -> postprocessing -> done/failed` 等。
 
 推荐的生产拓扑：
 
-- **容器侧（Linux/Docker）**：运行 `api + mysql + pre/post worker`，专职做预处理和后处理。
-- **Windows 异机侧（可多台）**：仅运行 `rpa worker`，专职执行 OMNIC 自动化。
+- **容器侧（Linux/Docker）**：运行 `api + mysql + pre/post worker`，负责预处理和后处理。
+- **Windows 异机侧（可多台）**：仅运行 `rpa worker`，负责执行 OMNIC 自动化。
 
 这样可以横向增加多台 RPA worker 提升吞吐，同时把 CPU 型预/后处理固定在容器侧。
 
 **步骤 1：启动基础服务（MySQL + FastAPI + pre/post worker）**
 
-建议通过 Docker 快速启动：
+通过 Docker 快速启动：
 
 ```bash
 cd Client_Server
 docker compose up -d --build
 ```
 
-*提示：如果有大模型环境变量所需的 KEY (如 `OPENROUTER_API_KEY`)，请先在宿主机的系统环境变量配置再执行 `docker compose up`。*
+*提示：环境变量所需的 KEY (目前使用了Openrouter、Dashscope、CAS、SerpAPI），请先在宿主机的系统环境变量配置或在docker配置文件中修改后，再执行 `docker compose up`。*
 
 **步骤 2：在一台或多台 Windows 机器启动 RPA Worker（仅消费 rpa_queue）**
 
@@ -67,9 +67,9 @@ docker compose up -d --build
 
 如果 Worker 部署在另一台机器，请先满足下面 4 条：
 
-1. **共享目录必须是同一份物理目录**：API 宿主机与 Worker 机器要同时挂载到同一个网络共享，例如都映射为 `Y:\shared_storage`。
-2. **共享盘符建议一致**：Worker 端和API宿主机建议使用同名盘符避免配置混淆。
-3. **数据库地址不能用 localhost**：Worker 在异机时，`DATABASE_URL / CELERY_BROKER_URL / CELERY_RESULT_BACKEND` 里的主机名要改成 API 宿主机 IP。
+1. **共享目录必须是同一份物理目录**：API 宿主机与 Worker 机器要同时挂载到同一个网络共享。
+2. **共享盘符建议一致**：Worker 端和 API 宿主机建议使用同名盘符避免配置混淆。
+3. **数据库地址配置**：Worker 在异机时，`DATABASE_URL / CELERY_BROKER_URL / CELERY_RESULT_BACKEND` 里的主机名要改成 API 宿主机 IP。
 4. **防火墙放通端口**：至少保证 Worker 到 API 宿主机的 `3307` 端口可达（MySQL 同时承担 Celery broker/result backend）。
 
 可参考 Windows 映射命令（两台机器都执行，映射到同一共享）：
@@ -90,7 +90,7 @@ CELERY_BROKER_URL=sqla+mysql+pymysql://ftir:ftir@<API_HOST_IP>:3307/ftir
 CELERY_RESULT_BACKEND=db+mysql+pymysql://ftir:ftir@<API_HOST_IP>:3307/ftir
 ```
 
-然后在每台 Worker 机器启动：
+然后在每台 Worker 启动：
 
 ```powershell
 cd Client_Server\backend
@@ -102,7 +102,7 @@ pip install -r ..\..\Code\requirements.txt
 celery -A app.celery_app:celery_app worker --loglevel=info -P solo -Q rpa_queue
 ```
 
-> 说明：Windows 下默认进程池可能触发 `fast_trace_task` 相关报错，已在代码侧对 Windows 强制 `solo`，命令中也建议保留 `-P solo`。
+> 说明：Windows 下默认进程池可能触发 `fast_trace_task` 相关报错，已在代码中对 Windows 强制 `solo`，命令中也建议保留 `-P solo`。
 >
 > 扩容方式：按同样配置启动第 2/3/... 台 Windows worker（都订阅 `rpa_queue`），Celery 会在这些 worker 间分发 RPA 任务，实现并行处理。
 
@@ -116,13 +116,13 @@ npm install
 npm run dev
 ```
 
-之后只需打开浏览器访问前端控制台地址即可进行在线调用与批量派发操作。
+之后只需打开浏览器访问前端地址即可进行操作。
 
 ---
 
-### 方案 B：本地独立软件运行 (便携使用场景)
+### 方案 B：本地独立运行
 
-如果你只需要单机、单任务快速排查或验证算法逻辑，推荐使用原生的本地运行方式。
+如果只需要单机、单任务快速排查或验证算法逻辑，推荐使用原生的本地运行方式。
 
 **环境准备**
 
@@ -150,7 +150,7 @@ python pipeline.py Demo/7343-3.CSV ./output
 
 ---
 
-## ⚠️ 须知与未来计划
+## ⚠️ 注意事项与未来计划
 
 1. `shared_storage` 是 API 与 Worker 的数据交换桥。若为跨机器部署，请确保两端指向**同一个网络共享目录**，否则会出现“任务已入队但 Worker 找不到输入文件”。
 2. Worker 需要同时安装 `backend/requirements.txt` 与 `Code/requirements.txt`，否则 RPA/后处理阶段可能因依赖缺失失败。
@@ -159,4 +159,4 @@ python pipeline.py Demo/7343-3.CSV ./output
    - API 宿主机执行 `docker compose ps` 确认 `worker_prepost` 也在运行。
    - Worker 机器执行 `Test-NetConnection <API_HOST_IP> -Port 3307` 确认数据库端口可达。
    - Windows Worker 启动后日志应显示仅订阅 `rpa_queue`。
-4. 未来计划加入 **权限控制/账户化系统**（保护局域网分发接口安全）、**健康检查监控**（OMNIC 弹窗阻塞时自动告警与恢复）。
+4. 计划加入 **权限控制/账户化系统**（保护分发接口安全），但目前处于内部测试阶段，暂时使用全局管理员权限。
