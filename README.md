@@ -3,7 +3,7 @@
 [English](README.md) | [简体中文](README_zh.md)
 
 This project provides a complete, automated pipeline for Fourier Transform Infrared (FT-IR) spectroscopy: from image recognition and data processing to intelligent diagnostic report generation.
-It includes the core engine for **Computer Vision (CV) extraction, Robotic Process Automation (RPA), and LLM-based report generation**, as well as a Web-based **task distribution and asynchronous execution platform (B/S architecture)** suitable for batch processing and network deployments.
+It includes the core engine for Computer Vision (CV) extraction, Robotic Process Automation (RPA), and LLM-based report generation, as well as a Web-based task distribution and asynchronous execution platform (B/S architecture) suitable for batch processing and network deployments.
 
 ## ✨ Key Features
 
