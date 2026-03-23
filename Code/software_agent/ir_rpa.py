@@ -14,12 +14,12 @@ from pywinauto.keyboard import send_keys
 class Coordinates:
 	pick_start: tuple[int, int] = (275, 253)
 	drag_from: tuple[int, int] = (512, 280)
-	drag_to: tuple[int, int] = (512, 400)
-	shift_click: tuple[int, int] = (290, 405)
+	drag_to: tuple[int, int] = (512, 410)
+	shift_click: tuple[int, int] = (290, 415)
 	button_a: tuple[int, int] = (620, 285)
-	button_b: tuple[int, int] = (880, 665)
-	print_dialog_1: tuple[int, int] = (1595, 1095)
-	print_dialog_2: tuple[int, int] = (1690, 1095)
+	button_b: tuple[int, int] = (755, 670)
+	print_dialog_1: tuple[int, int] = (1595, 980)
+	print_dialog_2: tuple[int, int] = (1690, 980)
 	clear_focus_click: tuple[int, int] = (1910, 40)
 
 class OmnicRpa:

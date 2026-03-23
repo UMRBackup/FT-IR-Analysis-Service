@@ -156,7 +156,7 @@ def generate_spectrum_image(csv_rows: List[List[str]], output_image_path: str) -
         print(f"[Image Generation Error] Exception: {e}")
         return ""
 
-def analyze_spectrum_with_ai(pdf_text: str, csv_text: str) -> Dict[str, Any]:
+def analyze_spectrum_with_ai(pdf_text: str, csv_text: str, format_retries: int = 3) -> Dict[str, Any]:
     prompt = f"""
 你是一个专业的红外光谱(IR)分析专家。以下是OMNIC的【检索匹配报告】以及【红外光谱数据(波数与透过率/吸光度的采样点)】。
 请你对这些数据进行深度的综合分析，并 **严格按照以下JSON格式返回结果**(不要返回任何其他格式字符或Markdown边界符号如 ```json)。
@@ -189,22 +189,24 @@ def analyze_spectrum_with_ai(pdf_text: str, csv_text: str) -> Dict[str, Any]:
 ============ CSV 谱图采样点(波数, 值) ============
 {csv_text}
 """
-    try:
+    last_parse_error = ""
+
+    for attempt in range(format_retries):
+        # 网络超时等请求错误由 call_gemini 统一重试并在最终失败时抛出异常。
         response_data = call_gemini(prompt)
-        
-        # 检查并安全获取 content
+
         if not response_data or 'choices' not in response_data or not response_data['choices']:
-            print(f"  -> Invalid API response format: {response_data}")
-            return {}
-            
+            last_parse_error = f"Invalid API response format: {response_data}"
+            print(f"  -> {last_parse_error} ({attempt + 1}/{format_retries})")
+            continue
+
         message = response_data['choices'][0].get('message', {})
         content = message.get('content')
-        
-        if content is None:
-            print("  -> AI model returned empty content (possible safety filter or network error)")
-            return {}
-            
-        raw_content = content.strip()
+
+        if content is None or not str(content).strip():
+            raise RuntimeError("AI model returned empty content")
+
+        raw_content = str(content).strip()
 
         # 清洗可能带有的 markdown 标识
         if raw_content.startswith("```json"):
@@ -212,14 +214,28 @@ def analyze_spectrum_with_ai(pdf_text: str, csv_text: str) -> Dict[str, Any]:
         if raw_content.endswith("```"):
             raw_content = raw_content[:-3]
 
-        ai_data = json.loads(raw_content.strip())
+        try:
+            ai_data = json.loads(raw_content.strip())
+        except json.JSONDecodeError as e:
+            last_parse_error = f"JSON parsing failed: {e}"
+            print(f"  -> {last_parse_error} ({attempt + 1}/{format_retries})")
+            continue
+
+        if not isinstance(ai_data, dict):
+            last_parse_error = f"AI response JSON root must be object, got: {type(ai_data).__name__}"
+            print(f"  -> {last_parse_error} ({attempt + 1}/{format_retries})")
+            continue
+
+        required_keys = {"detected_compounds", "key_peaks", "analysis_text"}
+        missing_keys = required_keys - set(ai_data.keys())
+        if missing_keys:
+            last_parse_error = f"AI response missing required keys: {sorted(missing_keys)}"
+            print(f"  -> {last_parse_error} ({attempt + 1}/{format_retries})")
+            continue
+
         return ai_data
-    except json.JSONDecodeError:
-        print("  -> Warning: Parsing failed!")
-        return {}
-    except Exception as e:
-        print(f"  -> Analysis exception: {e}")
-        return {}
+
+    raise RuntimeError(f"AI response format invalid after {format_retries} retries: {last_parse_error}")
 
 def generate_pdf_report(ai_data: Dict[str, Any], csv_path: str, image_path: str, output_path: str, references: List[Any] = [], structure_images: List[str] = []) -> None:
     try:
@@ -299,9 +315,7 @@ def generate_report(csv_path: str, pdf_path: str, output_path: str) -> None:
     ai_analysis_result = analyze_spectrum_with_ai(pdf_text, csv_text)
 
     # 4. 对结果进行二次校对
-    if not ai_analysis_result:
-        print("Warning: No valid analysis result obtained, an empty template report will be generated")
-    else:
+    if ai_analysis_result:
         detected_compounds = ai_analysis_result.get("detected_compounds", [])
         for comp in detected_compounds:
             en_name = comp.get("name_en", "").strip()
