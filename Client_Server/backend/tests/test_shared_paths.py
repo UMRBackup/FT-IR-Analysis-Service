@@ -41,3 +41,28 @@ def test_path_exists_swallows_unc_oserror(monkeypatch):
     monkeypatch.setattr(Path, "exists", fake_exists)
 
     assert shared_paths._path_exists(Path(r"\\192.168.1.77\zhaozhixuan\shared_storage")) is False
+
+
+def test_unc_check_uses_share_root_not_target_file(monkeypatch):
+    target = Path(
+        r"\\192.168.1.77\zhaozhixuan\shared_storage\tasks\id\output\work_dir\8022_omnic.pdf"
+    )
+    share = Path(r"\\192.168.1.77\zhaozhixuan")
+
+    monkeypatch.setattr(shared_paths.os, "name", "nt")
+    monkeypatch.setattr(shared_paths, "_UNC_AUTH_CACHE", set())
+
+    def fake_exists(path: Path) -> bool:
+        return str(path) == str(share)
+
+    connect_calls: list[tuple[str, str, str]] = []
+
+    def fake_connect(share_root: str, username: str, password: str) -> None:
+        connect_calls.append((share_root, username, password))
+
+    monkeypatch.setattr(shared_paths, "_path_exists", fake_exists)
+    monkeypatch.setattr(shared_paths, "_connect_unc_share", fake_connect)
+
+    shared_paths._ensure_windows_unc_access(target)
+
+    assert connect_calls == []

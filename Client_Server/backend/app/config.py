@@ -21,6 +21,10 @@ class Settings(BaseSettings):
 
     rpa_queue_concurrency: int = 1
 
+    shared_file_retry_timeout_sec: float = 45.0
+    shared_file_retry_initial_delay_sec: float = 1.0
+    shared_file_retry_max_delay_sec: float = 8.0
+
     # Optional credentials used by Windows host processes to establish UNC sessions.
     # These do not affect container-side CIFS mounts.
     unc_username: str = ""

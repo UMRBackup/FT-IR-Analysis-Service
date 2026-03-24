@@ -4,12 +4,67 @@ import io
 import importlib
 import re
 import sys
+import time
 from contextlib import redirect_stdout
 from pathlib import Path
 from typing import Callable
 
 from .config import settings
 from .shared_paths import resolve_shared_path, shared_root, to_shared_rel_path
+
+
+def _wait_for_shared_file_ready(
+    path_ref: str,
+    *,
+    require_nonempty: bool,
+    context: str,
+    on_log: Callable[[str, int], None] | None = None,
+    log_progress: int = 0,
+) -> Path:
+    timeout = max(0.0, settings.shared_file_retry_timeout_sec)
+    delay = max(0.1, settings.shared_file_retry_initial_delay_sec)
+    max_delay = max(delay, settings.shared_file_retry_max_delay_sec)
+    started = time.monotonic()
+    attempt = 0
+    resolved = Path(path_ref)
+
+    while True:
+        attempt += 1
+
+        # Resolve failures typically indicate credential/connectivity/path issues
+        # and should fail fast rather than consuming retry budget.
+        resolved = resolve_shared_path(path_ref)
+
+        exists = resolved.exists()
+        size = resolved.stat().st_size if exists else -1
+        ready = exists and (size > 0 if require_nonempty else True)
+        if ready:
+            return resolved
+
+        elapsed = time.monotonic() - started
+        if elapsed >= timeout:
+            if exists and require_nonempty:
+                raise ValueError(
+                    f"{context}: file is still empty after waiting {elapsed:.1f}s. path={resolved}"
+                )
+            raise FileNotFoundError(
+                f"{context}: file not found after waiting {elapsed:.1f}s. path={resolved}"
+            )
+
+        wait_seconds = min(delay, max(0.0, timeout - elapsed))
+        if on_log and wait_seconds > 0:
+            state = "empty" if exists else "missing"
+            on_log(
+                (
+                    f"{context}: waiting for NAS file ({state}), "
+                    f"attempt={attempt}, wait={wait_seconds:.1f}s, path={resolved}"
+                ),
+                log_progress,
+            )
+
+        if wait_seconds > 0:
+            time.sleep(wait_seconds)
+        delay = min(delay * 2, max_delay)
 
 
 def _ensure_code_root_importable() -> None:
@@ -100,21 +155,6 @@ def _assert_preprocess_output(
         )
 
 
-def _assert_rpa_input_csv(output_csv: str) -> Path:
-    resolved_csv_path = resolve_shared_path(output_csv)
-    if not resolved_csv_path.exists():
-        raise FileNotFoundError(
-            "RPA self-check failed: output_csv not found before RPA stage. "
-            f"csv={resolved_csv_path}; shared_root={shared_root()}"
-        )
-    if resolved_csv_path.stat().st_size == 0:
-        raise ValueError(
-            "RPA self-check failed: output_csv is empty before RPA stage. "
-            f"csv={resolved_csv_path}"
-        )
-    return resolved_csv_path
-
-
 def run_preprocess_stage_with_stream(
     image_path: str,
     output_dir: str,
@@ -156,7 +196,13 @@ def run_rpa_stage_with_stream(
 ) -> dict:
     _ensure_code_root_importable()
 
-    resolved_csv_path = _assert_rpa_input_csv(output_csv)
+    resolved_csv_path = _wait_for_shared_file_ready(
+        output_csv,
+        require_nonempty=True,
+        context="RPA input CSV not ready",
+        on_log=on_log,
+        log_progress=41,
+    )
     resolved_omnic_pdf = resolve_shared_path(omnic_pdf)
     resolved_omnic_pdf.parent.mkdir(parents=True, exist_ok=True)
 
@@ -184,8 +230,20 @@ def run_postprocess_stage_with_stream(
 ) -> dict:
     _ensure_code_root_importable()
 
-    resolved_csv_path = resolve_shared_path(output_csv)
-    resolved_omnic_pdf = resolve_shared_path(omnic_pdf)
+    resolved_csv_path = _wait_for_shared_file_ready(
+        output_csv,
+        require_nonempty=True,
+        context="Postprocess input CSV not ready",
+        on_log=on_log,
+        log_progress=87,
+    )
+    resolved_omnic_pdf = _wait_for_shared_file_ready(
+        omnic_pdf,
+        require_nonempty=True,
+        context="Postprocess input OMNIC PDF not ready",
+        on_log=on_log,
+        log_progress=87,
+    )
     resolved_final_pdf = resolve_shared_path(final_pdf)
     resolved_final_pdf.parent.mkdir(parents=True, exist_ok=True)
 

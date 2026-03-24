@@ -61,10 +61,14 @@ def _ensure_windows_unc_access(root: Path) -> None:
     if not share_root:
         return
 
-    if share_root in _UNC_AUTH_CACHE and _path_exists(root):
+    # Connectivity/authentication should be verified on the share root itself
+    # because caller paths may point to files that do not exist yet.
+    share_path = Path(share_root)
+
+    if share_root in _UNC_AUTH_CACHE and _path_exists(share_path):
         return
 
-    if _path_exists(root):
+    if _path_exists(share_path):
         _UNC_AUTH_CACHE.add(share_root)
         return
 
@@ -72,7 +76,7 @@ def _ensure_windows_unc_access(root: Path) -> None:
     password = settings.unc_password or settings.nas_pass
     if username and password:
         _connect_unc_share(share_root, username, password)
-        if _path_exists(root):
+        if _path_exists(share_path):
             _UNC_AUTH_CACHE.add(share_root)
             return
 
