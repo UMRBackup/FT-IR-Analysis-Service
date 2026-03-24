@@ -39,6 +39,7 @@ services:
       - ../Code:/code
       - nas_shared:/shared
     environment:
+      TZ: Asia/Shanghai
       CODE_ROOT: /code
       STORAGE_ROOT: /shared
       SHARED_STORAGE_ROOT: /shared
@@ -71,6 +72,7 @@ services:
       - ../Code:/code
       - nas_shared:/shared
     environment:
+      TZ: Asia/Shanghai
       CODE_ROOT: /code
       STORAGE_ROOT: /shared
       SHARED_STORAGE_ROOT: /shared

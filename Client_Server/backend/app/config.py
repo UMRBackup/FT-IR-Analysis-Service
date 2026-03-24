@@ -18,8 +18,8 @@ class Settings(BaseSettings):
     database_url: str = "mysql+pymysql://ftir:ftir@localhost:3307/ftir"
     celery_broker_url: str = "redis://localhost:6379/0"
     celery_result_backend: str = "redis://localhost:6379/1"
-    celery_enable_utc: bool = True
-    celery_timezone: str = "UTC"
+    celery_enable_utc: bool = False
+    celery_timezone: str = "Asia/Shanghai"
 
     rpa_queue_concurrency: int = 1
 
