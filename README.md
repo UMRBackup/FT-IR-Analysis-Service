@@ -85,10 +85,25 @@ CODE_ROOT=C:\path\to\IR-Project\Code
 STORAGE_ROOT=Y:\shared_storage
 SHARED_STORAGE_ROOT=Y:\shared_storage
 
+JWT_SECRET_KEY=<replace with a strong random secret>
+JWT_PREVIOUS_SECRET_KEY=
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=10080
+JWT_CURRENT_KID=v1
+JWT_PREVIOUS_KID=
+
 DATABASE_URL=mysql+pymysql://ftir:ftir@<API_HOST_IP>:3307/ftir
 CELERY_BROKER_URL=redis://<API_HOST_IP>:6379/0
 CELERY_RESULT_BACKEND=redis://<API_HOST_IP>:6379/1
 ```
+
+Online dual-key rotation notes:
+
+- New tokens are always signed with the current key (`JWT_SECRET_KEY`, `JWT_CURRENT_KID`).
+- Token verification accepts both current and previous key (`JWT_PREVIOUS_SECRET_KEY`) during transition.
+- Admin can rotate keys at runtime (no process restart) through:
+   - `GET /api/v1/auth/key-info`
+   - `POST /api/v1/auth/rotate-key`
 
 Then start on each Windows worker machine:
 

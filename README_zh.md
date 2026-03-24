@@ -85,10 +85,25 @@ CODE_ROOT=C:\path\to\IR-Project\Code
 STORAGE_ROOT=Y:\shared_storage
 SHARED_STORAGE_ROOT=Y:\shared_storage
 
+JWT_SECRET_KEY=<请替换为高强度随机密钥>
+JWT_PREVIOUS_SECRET_KEY=
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=10080
+JWT_CURRENT_KID=v1
+JWT_PREVIOUS_KID=
+
 DATABASE_URL=mysql+pymysql://ftir:ftir@<API_HOST_IP>:3307/ftir
 CELERY_BROKER_URL=redis://<API_HOST_IP>:6379/0
 CELERY_RESULT_BACKEND=redis://<API_HOST_IP>:6379/1
 ```
+
+双密钥在线轮换说明：
+
+- 服务签发 token 始终使用当前密钥 (`JWT_SECRET_KEY`, `JWT_CURRENT_KID`)。
+- 服务验签时会同时接受当前密钥和上一把密钥（`JWT_PREVIOUS_SECRET_KEY`）。
+- 管理员可调用以下接口在线轮换（无需重启进程）：
+   - `GET /api/v1/auth/key-info`
+   - `POST /api/v1/auth/rotate-key`
 
 然后在每台 Worker 启动：
 

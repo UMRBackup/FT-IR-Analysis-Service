@@ -51,6 +51,18 @@ input[type="file"] {
   margin-bottom: 12px;
 }
 
+input[type="text"],
+input[type="password"] {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 10px;
+}
+
+.input-invalid {
+  border-color: var(--accent-2) !important;
+  background: #fff4ef;
+}
+
 button {
   background: var(--accent);
   color: white;
@@ -95,6 +107,37 @@ button:disabled {
 
 .error {
   color: var(--accent-2);
+}
+
+.field-error {
+  color: var(--accent-2);
+  margin: 6px 0 10px;
+  font-size: 13px;
+}
+
+.rules-box {
+  margin-top: 8px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fffaf0;
+}
+
+.rules-title {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.rules-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.rules-list li {
+  margin-bottom: 4px;
 }
 
 .muted {

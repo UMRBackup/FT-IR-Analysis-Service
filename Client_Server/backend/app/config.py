@@ -23,6 +23,16 @@ class Settings(BaseSettings):
 
     rpa_queue_concurrency: int = 1
 
+    jwt_secret_key: str = "change-this-in-production"
+    jwt_previous_secret_key: str = ""
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60 * 24 * 7
+    jwt_current_kid: str = "v1"
+    jwt_previous_kid: str = ""
+
+    initial_admin_username: str = "admin"
+    initial_admin_password: str = ""
+
     shared_file_retry_timeout_sec: float = 45.0
     shared_file_retry_initial_delay_sec: float = 1.0
     shared_file_retry_max_delay_sec: float = 8.0

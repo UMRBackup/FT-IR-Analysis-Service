@@ -9,6 +9,7 @@ export type TaskStatus =
 
 export interface TaskSummary {
   task_id: string;
+  user_id?: number | null;
   status: TaskStatus;
   created_at: string;
   updated_at: string;
@@ -23,4 +24,18 @@ export interface LogEvent {
   progress: number;
   message: string;
   created_at: string;
+}
+
+export interface User {
+  id: number;
+  username: string;
+  is_admin: boolean;
+}
+
+export interface LoginResponse {
+  token: {
+    access_token: string;
+    token_type: string;
+  };
+  user: User;
 }

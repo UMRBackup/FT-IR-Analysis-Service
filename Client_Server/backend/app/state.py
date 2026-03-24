@@ -8,9 +8,13 @@ from typing import Any, Optional
 
 from sqlalchemy import Boolean, DateTime, Integer, String, Text, create_engine, select, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
+from passlib.context import CryptContext
 
 from .config import settings
 from .schemas import TaskStatus
+
+
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 @dataclass
 class UserRecord:
@@ -18,6 +22,15 @@ class UserRecord:
     username: str
     password_hash: str
     is_admin: bool
+
+
+@dataclass
+class AuthKeyRecord:
+    current_secret_key: str
+    current_kid: str
+    previous_secret_key: Optional[str]
+    previous_kid: Optional[str]
+    updated_at: datetime
 
 @dataclass
 class TaskRecord:
@@ -71,6 +84,17 @@ class TaskLogModel(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
 
 
+class AuthKeyModel(Base):
+    __tablename__ = "auth_keys"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    current_secret_key: Mapped[str] = mapped_column(Text, nullable=False)
+    current_kid: Mapped[str] = mapped_column(String(128), nullable=False)
+    previous_secret_key: Mapped[str | None] = mapped_column(Text, nullable=True)
+    previous_kid: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+
+
 class MySQLTaskStore:
     def __init__(self) -> None:
         self._pid = os.getpid()
@@ -83,6 +107,60 @@ class MySQLTaskStore:
                 session.commit()
             except Exception:
                 session.rollback()
+        self._bootstrap_initial_admin()
+        self._bootstrap_auth_keys()
+
+    def _bootstrap_initial_admin(self) -> None:
+        username = settings.initial_admin_username.strip()
+        password = settings.initial_admin_password
+        if not username or not password:
+            return
+
+        with Session(self._engine_for_process()) as session:
+            stmt = select(UserModel).where(UserModel.username == username)
+            user = session.execute(stmt).scalar_one_or_none()
+            if user is None:
+                session.add(
+                    UserModel(
+                        username=username,
+                        password_hash=pwd_context.hash(password),
+                        is_admin=True,
+                    )
+                )
+                session.commit()
+                return
+
+            # Keep the account as admin if it already exists.
+            if not user.is_admin:
+                user.is_admin = True
+                session.commit()
+
+    def _bootstrap_auth_keys(self) -> None:
+        with Session(self._engine_for_process()) as session:
+            row = session.get(AuthKeyModel, 1)
+            if row is None:
+                row = AuthKeyModel(
+                    id=1,
+                    current_secret_key=settings.jwt_secret_key,
+                    current_kid=settings.jwt_current_kid,
+                    previous_secret_key=settings.jwt_previous_secret_key or None,
+                    previous_kid=settings.jwt_previous_kid or None,
+                    updated_at=datetime.utcnow(),
+                )
+                session.add(row)
+                session.commit()
+                return
+
+            changed = False
+            if not row.current_secret_key:
+                row.current_secret_key = settings.jwt_secret_key
+                changed = True
+            if not row.current_kid:
+                row.current_kid = settings.jwt_current_kid
+                changed = True
+            if changed:
+                row.updated_at = datetime.utcnow()
+                session.commit()
 
     def _build_engine(self):
         return create_engine(
@@ -133,6 +211,57 @@ class MySQLTaskStore:
             if row:
                 row.password_hash = new_password_hash
                 session.commit()
+
+    @staticmethod
+    def _to_auth_key_record(row: AuthKeyModel) -> AuthKeyRecord:
+        return AuthKeyRecord(
+            current_secret_key=row.current_secret_key,
+            current_kid=row.current_kid,
+            previous_secret_key=row.previous_secret_key,
+            previous_kid=row.previous_kid,
+            updated_at=row.updated_at,
+        )
+
+    def get_auth_keys(self) -> AuthKeyRecord:
+        with Session(self._engine_for_process()) as session:
+            row = session.get(AuthKeyModel, 1)
+            if row is None:
+                row = AuthKeyModel(
+                    id=1,
+                    current_secret_key=settings.jwt_secret_key,
+                    current_kid=settings.jwt_current_kid,
+                    previous_secret_key=settings.jwt_previous_secret_key or None,
+                    previous_kid=settings.jwt_previous_kid or None,
+                    updated_at=datetime.utcnow(),
+                )
+                session.add(row)
+                session.commit()
+                session.refresh(row)
+            return self._to_auth_key_record(row)
+
+    def rotate_auth_keys(self, *, new_secret_key: str, new_kid: str | None = None) -> AuthKeyRecord:
+        with Session(self._engine_for_process()) as session:
+            row = session.get(AuthKeyModel, 1)
+            if row is None:
+                row = AuthKeyModel(
+                    id=1,
+                    current_secret_key=new_secret_key,
+                    current_kid=new_kid or settings.jwt_current_kid,
+                    previous_secret_key=None,
+                    previous_kid=None,
+                    updated_at=datetime.utcnow(),
+                )
+                session.add(row)
+            else:
+                row.previous_secret_key = row.current_secret_key
+                row.previous_kid = row.current_kid
+                row.current_secret_key = new_secret_key
+                row.current_kid = new_kid or f"{row.current_kid}-next"
+                row.updated_at = datetime.utcnow()
+
+            session.commit()
+            session.refresh(row)
+            return self._to_auth_key_record(row)
 
     @staticmethod
     def _to_record(row: TaskModel) -> TaskRecord:
