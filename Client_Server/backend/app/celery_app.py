@@ -17,6 +17,10 @@ celery_app = Celery(
     include=["app.tasks"],
 )
 
+celery_app.conf.update(
+    enable_utc=settings.celery_enable_utc,
+    timezone=settings.celery_timezone,
+)
 celery_app.conf.task_default_queue = "preprocess_queue"
 celery_app.conf.task_routes = {
     "app.tasks.preprocess_task": {"queue": "preprocess_queue"},
