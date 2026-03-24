@@ -2,6 +2,7 @@ fastapi
 uvicorn[standard]
 python-multipart
 celery
+redis
 sqlalchemy
 pymysql
 cryptography
@@ -24,8 +25,5 @@ dashscope
 matplotlib
 serpapi
 PyJWT
-passlib[bcrypt]
-bcrypt
-pyjwt
 passlib[bcrypt]
 bcrypt

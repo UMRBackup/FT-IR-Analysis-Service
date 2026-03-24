@@ -70,7 +70,7 @@ docker compose up -d --build
 1. **共享目录必须是同一份物理目录**：API 宿主机与 Worker 机器要同时挂载到同一个网络共享。
 2. **共享盘符建议一致**：Worker 端和 API 宿主机建议使用同名盘符避免配置混淆。
 3. **数据库地址配置**：Worker 在异机时，`DATABASE_URL / CELERY_BROKER_URL / CELERY_RESULT_BACKEND` 里的主机名要改成 API 宿主机 IP。
-4. **防火墙放通端口**：至少保证 Worker 到 API 宿主机的 `3307` 端口可达（MySQL 同时承担 Celery broker/result backend）。
+4. **防火墙放通端口**：至少保证 Worker 到 API 宿主机的 `3307`（MySQL 数据库）与 `6379`（Redis broker/结果后端）端口可达。
 
 可参考 Windows 映射命令（两台机器都执行，映射到同一共享）：
 
@@ -86,8 +86,8 @@ STORAGE_ROOT=Y:\shared_storage
 SHARED_STORAGE_ROOT=Y:\shared_storage
 
 DATABASE_URL=mysql+pymysql://ftir:ftir@<API_HOST_IP>:3307/ftir
-CELERY_BROKER_URL=sqla+mysql+pymysql://ftir:ftir@<API_HOST_IP>:3307/ftir
-CELERY_RESULT_BACKEND=db+mysql+pymysql://ftir:ftir@<API_HOST_IP>:3307/ftir
+CELERY_BROKER_URL=redis://<API_HOST_IP>:6379/0
+CELERY_RESULT_BACKEND=redis://<API_HOST_IP>:6379/1
 ```
 
 然后在每台 Worker 启动：

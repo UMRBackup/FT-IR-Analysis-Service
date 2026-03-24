@@ -17,6 +17,17 @@ services:
       timeout: 5s
       retries: 20
 
+  redis:
+    image: redis:7-alpine
+    container_name: ftir-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
   api:
     build:
       context: ./backend
@@ -32,8 +43,8 @@ services:
       STORAGE_ROOT: /shared
       SHARED_STORAGE_ROOT: /shared
       DATABASE_URL: mysql+pymysql://ftir:ftir@mysql:3306/ftir
-      CELERY_BROKER_URL: sqla+mysql+pymysql://ftir:ftir@mysql:3306/ftir
-      CELERY_RESULT_BACKEND: db+mysql+pymysql://ftir:ftir@mysql:3306/ftir
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
       DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       CAS_API_KEY: ${CAS_API_KEY:-}
@@ -43,6 +54,8 @@ services:
       - "8000:8000"
     depends_on:
       mysql:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   # Container worker only handles preprocess/postprocess queues.
@@ -62,8 +75,8 @@ services:
       STORAGE_ROOT: /shared
       SHARED_STORAGE_ROOT: /shared
       DATABASE_URL: mysql+pymysql://ftir:ftir@mysql:3306/ftir
-      CELERY_BROKER_URL: sqla+mysql+pymysql://ftir:ftir@mysql:3306/ftir
-      CELERY_RESULT_BACKEND: db+mysql+pymysql://ftir:ftir@mysql:3306/ftir
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
       DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       CAS_API_KEY: ${CAS_API_KEY:-}
@@ -71,6 +84,8 @@ services:
     command: celery -A app.celery_app:celery_app worker --loglevel=info -Q preprocess_queue,postprocess_queue
     depends_on:
       mysql:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
 volumes:

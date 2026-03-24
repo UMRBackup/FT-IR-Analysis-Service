@@ -70,7 +70,7 @@ If the worker runs on another machine, satisfy these 4 rules first:
 1. **Use the same physical shared directory**: both API host and worker machine must mount the same network share, for example as `Y:\shared_storage`.
 2. **Keep drive mapping consistent when possible**:  the worker should preferably use the same drive letter as the API host to avoid path drift.
 3. **DB/Broker IP configuration**: in worker-side `.env`, set `DATABASE_URL / CELERY_BROKER_URL / CELERY_RESULT_BACKEND` host to API host IP.
-4. **Open firewall/network path**: worker must reach API host port `3307` (MySQL is used as DB + Celery broker/result backend).
+4. **Open firewall/network path**: worker must reach API host ports `3307` (MySQL DB) and `6379` (Redis broker/result backend).
 
 Example mapping command on Windows (run on both machines, point to the same share):
 
@@ -86,8 +86,8 @@ STORAGE_ROOT=Y:\shared_storage
 SHARED_STORAGE_ROOT=Y:\shared_storage
 
 DATABASE_URL=mysql+pymysql://ftir:ftir@<API_HOST_IP>:3307/ftir
-CELERY_BROKER_URL=sqla+mysql+pymysql://ftir:ftir@<API_HOST_IP>:3307/ftir
-CELERY_RESULT_BACKEND=db+mysql+pymysql://ftir:ftir@<API_HOST_IP>:3307/ftir
+CELERY_BROKER_URL=redis://<API_HOST_IP>:6379/0
+CELERY_RESULT_BACKEND=redis://<API_HOST_IP>:6379/1
 ```
 
 Then start on each Windows worker machine:

@@ -16,8 +16,8 @@ class Settings(BaseSettings):
     shared_storage_root: Path = Path("./storage")
 
     database_url: str = "mysql+pymysql://ftir:ftir@localhost:3307/ftir"
-    celery_broker_url: str = "sqla+mysql+pymysql://ftir:ftir@localhost:3307/ftir"
-    celery_result_backend: str = "db+mysql+pymysql://ftir:ftir@localhost:3307/ftir"
+    celery_broker_url: str = "redis://localhost:6379/0"
+    celery_result_backend: str = "redis://localhost:6379/1"
 
     rpa_queue_concurrency: int = 1
 
