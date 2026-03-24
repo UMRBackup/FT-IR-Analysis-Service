@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Optional
@@ -72,7 +73,8 @@ class TaskLogModel(Base):
 
 class MySQLTaskStore:
     def __init__(self) -> None:
-        self._engine = create_engine(settings.database_url, pool_pre_ping=True)
+        self._pid = os.getpid()
+        self._engine = self._build_engine()
         Base.metadata.create_all(self._engine)
         # Handle existing DBs that don't have user_id
         with Session(self._engine) as session:
@@ -82,8 +84,28 @@ class MySQLTaskStore:
             except Exception:
                 session.rollback()
 
+    def _build_engine(self):
+        return create_engine(
+            settings.database_url,
+            pool_pre_ping=True,
+            pool_recycle=1800,
+        )
+
+    def _engine_for_process(self):
+        # Celery prefork may inherit parent process connection pools.
+        # Recreate engine lazily in child processes to avoid protocol conflicts.
+        current_pid = os.getpid()
+        if current_pid != self._pid:
+            try:
+                self._engine.dispose(close=False)
+            except Exception:
+                pass
+            self._engine = self._build_engine()
+            self._pid = current_pid
+        return self._engine
+
     def create_user(self, username: str, password_hash: str, is_admin: bool = False) -> UserRecord:
-        with Session(self._engine) as session:
+        with Session(self._engine_for_process()) as session:
             row = UserModel(username=username, password_hash=password_hash, is_admin=is_admin)
             session.add(row)
             session.commit()
@@ -91,7 +113,7 @@ class MySQLTaskStore:
             return UserRecord(id=row.id, username=row.username, password_hash=row.password_hash, is_admin=row.is_admin)
 
     def get_user_by_username(self, username: str) -> UserRecord | None:
-        with Session(self._engine) as session:
+        with Session(self._engine_for_process()) as session:
             stmt = select(UserModel).where(UserModel.username == username)
             row = session.execute(stmt).scalar_one_or_none()
             if not row:
@@ -99,14 +121,14 @@ class MySQLTaskStore:
             return UserRecord(id=row.id, username=row.username, password_hash=row.password_hash, is_admin=row.is_admin)
 
     def get_user_by_id(self, user_id: int) -> UserRecord | None:
-        with Session(self._engine) as session:
+        with Session(self._engine_for_process()) as session:
             row = session.get(UserModel, user_id)
             if not row:
                 return None
             return UserRecord(id=row.id, username=row.username, password_hash=row.password_hash, is_admin=row.is_admin)
 
     def update_password(self, user_id: int, new_password_hash: str) -> None:
-        with Session(self._engine) as session:
+        with Session(self._engine_for_process()) as session:
             row = session.get(UserModel, user_id)
             if row:
                 row.password_hash = new_password_hash
@@ -129,7 +151,7 @@ class MySQLTaskStore:
         )
 
     def create(self, record: TaskRecord) -> None:
-        with Session(self._engine) as session:
+        with Session(self._engine_for_process()) as session:
             row = TaskModel(
                 task_id=record.task_id,
                 user_id=record.user_id,
@@ -147,7 +169,7 @@ class MySQLTaskStore:
             session.commit()
 
     def get(self, task_id: str) -> TaskRecord | None:
-        with Session(self._engine) as session:
+        with Session(self._engine_for_process()) as session:
             row = session.get(TaskModel, task_id)
             if not row:
                 return None
@@ -162,7 +184,7 @@ class MySQLTaskStore:
         progress: int | None = None,
         result: dict[str, Any] | None = None,
     ) -> TaskRecord | None:
-        with Session(self._engine) as session:
+        with Session(self._engine_for_process()) as session:
             row = session.get(TaskModel, task_id)
             if not row:
                 return None
@@ -179,7 +201,7 @@ class MySQLTaskStore:
             return self._to_record(row)
 
     def append_log(self, task_id: str, payload: dict[str, Any]) -> None:
-        with Session(self._engine) as session:
+        with Session(self._engine_for_process()) as session:
             session.add(
                 TaskLogModel(
                     task_id=task_id,
@@ -190,7 +212,7 @@ class MySQLTaskStore:
             session.commit()
 
     def get_logs(self, task_id: str, start: int = 0) -> list[dict[str, Any]]:
-        with Session(self._engine) as session:
+        with Session(self._engine_for_process()) as session:
             stmt = (
                 select(TaskLogModel)
                 .where(TaskLogModel.task_id == task_id)
@@ -201,7 +223,7 @@ class MySQLTaskStore:
             return [json.loads(row.payload_json) for row in rows]
 
     def get_all(self, user_id: Optional[int] = None) -> list[TaskRecord]:
-        with Session(self._engine) as session:
+        with Session(self._engine_for_process()) as session:
             stmt = select(TaskModel)
             if user_id is not None:
                 stmt = stmt.where(TaskModel.user_id == user_id)
@@ -210,7 +232,7 @@ class MySQLTaskStore:
             return [self._to_record(row) for row in rows]
 
     def delete(self, task_id: str) -> bool:
-        with Session(self._engine) as session:
+        with Session(self._engine_for_process()) as session:
             row = session.get(TaskModel, task_id)
             if not row:
                 return False
