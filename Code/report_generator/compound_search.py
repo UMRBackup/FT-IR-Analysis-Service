@@ -1,4 +1,5 @@
 import os
+import time
 import requests
 from typing import Optional, Dict, Any
 
@@ -8,49 +9,66 @@ except KeyError:
     CAS_API =  ""
     print("Warning: Missing CAS_API_KEY environment variable")
 
+REQUEST_TIMEOUT = (10, 30)
+MAX_RETRIES = 3
+RETRY_BACKOFF_SECONDS = 1.0
+RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+
+
+def _request_cas_json(endpoint: str, params: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    url = f"https://commonchemistry.cas.org/api/{endpoint}"
+    headers = {
+        "accept": "application/json",
+        "X-API-KEY": CAS_API
+    }
+    last_error: Optional[Exception] = None
+
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            response = requests.get(url, headers=headers, params=params, timeout=REQUEST_TIMEOUT)
+            if response.status_code in RETRYABLE_STATUS_CODES:
+                raise requests.exceptions.HTTPError(
+                    f"{response.status_code} Server Error: retryable response for url: {response.url}",
+                    response=response,
+                )
+
+            response.raise_for_status()
+            return response.json()
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, requests.exceptions.SSLError) as error:
+            last_error = error
+        except requests.exceptions.HTTPError as error:
+            last_error = error
+            status_code = error.response.status_code if error.response is not None else None
+            if status_code not in RETRYABLE_STATUS_CODES:
+                print(f"CAS Request Failed: {error}")
+                return None
+
+        if attempt < MAX_RETRIES:
+            time.sleep(RETRY_BACKOFF_SECONDS * attempt)
+
+    if last_error is not None:
+        print(f"CAS Request Failed after {MAX_RETRIES} attempts: {last_error}")
+    return None
+
 def cas_search(query: str) -> Optional[Dict[str, Any]]:
     if not CAS_API:
         print("Warning: CAS_API_KEY not configured, skipping search")
         return None
 
-    url = "https://commonchemistry.cas.org/api/search"
-    headers = {
-        "accept": "application/json",
-        "X-API-KEY": CAS_API
-    }
     params = {
         "q": query
     }
-
-    try:
-        response = requests.get(url, headers=headers, params=params)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        print(f"CAS Request Failed: {e}")
-        return None
+    return _request_cas_json("search", params)
 
 def cas_detail(cas_number: str) -> Optional[Dict[str, Any]]:
     if not CAS_API:
         print("Warning: CAS_API_KEY not configured, skipping query")
         return None
 
-    url = "https://commonchemistry.cas.org/api/detail"
-    headers = {
-        "accept": "application/json",
-        "X-API-KEY": CAS_API
-    }
     params = {
         "cas_rn": cas_number
     }
-
-    try:
-        response = requests.get(url, headers=headers, params=params)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        print(f"CAS Request Failed: {e}")
-        return None
+    return _request_cas_json("detail", params)
 
 def get_compound_info(query: str) -> Optional[Dict[str, Any]]:
     search_data = cas_search(query)
