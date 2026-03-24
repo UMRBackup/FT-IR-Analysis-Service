@@ -18,7 +18,7 @@ services:
       retries: 20
 
   redis:
-    image: redis:7-alpine
+    image: redis:8.6.1
     container_name: ftir-redis
     ports:
       - "6379:6379"
