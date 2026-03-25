@@ -312,7 +312,7 @@ export function App() {
     return (
       <main className="page">
         <section className="card">
-          <h1>FT-IR 云端任务台</h1>
+          <h1>FT-IR 解析</h1>
           <p>请先登录后再使用任务功能。</p>
 
           <div className="row">
@@ -349,7 +349,7 @@ export function App() {
           <div className="rules-box">
             <p className="rules-title">账号密码规则</p>
             <ul className="rules-list">
-              <li>用户名：3-8 位，仅允许字母、数字、下划线(_)、短横杠(-)，不允许空格，不允许重名。</li>
+              <li>用户名：3-8 位，仅允许字母、数字、下划线(_)、短横杠(-)，不允许空格。</li>
               <li>密码：6-16 位，必须同时包含字母和数字，可含符号（如 !@#），不允许空格。</li>
             </ul>
           </div>
@@ -401,7 +401,7 @@ export function App() {
       </section>
 
       <section className="card">
-        <h1>FT-IR 云端任务台</h1>
+        <h1>FT-IR 解析</h1>
         <p>上传光谱图片或 CSV。</p>
 
         <label htmlFor="upload">输入文件</label>
