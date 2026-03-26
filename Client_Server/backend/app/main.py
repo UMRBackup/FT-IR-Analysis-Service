@@ -6,7 +6,7 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect, Request
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from celery import chain
@@ -52,6 +52,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
 
+# NOTE: In production, consider limiting allow_origins to your actual domain name(s) instead of ["*"]
+# Set it via an environment variable like `settings.cors_allow_origins`.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -77,12 +79,12 @@ def _check_task_access(record: TaskRecord, user: UserRecord) -> None:
     if user.is_admin:
         return
     if record.user_id is None or record.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Forbidden")
+        raise HTTPException(status_code=403, detail="无权限访问该任务")
 
 
 def _require_admin(user: UserRecord) -> None:
     if not user.is_admin:
-        raise HTTPException(status_code=403, detail="Admin privileges required")
+        raise HTTPException(status_code=403, detail="需要管理员权限")
 
 
 @app.get("/health")
@@ -96,7 +98,7 @@ def register(payload: UserCreate) -> UserResponse:
 
     existing = store.get_user_by_username(username)
     if existing:
-        raise HTTPException(status_code=409, detail="Username already exists")
+        raise HTTPException(status_code=409, detail="用户名已存在")
 
     user = store.create_user(
         username=username,
@@ -110,7 +112,7 @@ def register(payload: UserCreate) -> UserResponse:
 def login(payload: UserLogin) -> AuthResponse:
     user = store.get_user_by_username(payload.username.strip())
     if not user or not verify_password(payload.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+        raise HTTPException(status_code=401, detail="用户名或密码错误")
 
     token = create_access_token(user=user)
     return AuthResponse(
@@ -130,7 +132,7 @@ def change_password(
     current_user: UserRecord = Depends(get_current_user),
 ) -> dict[str, str]:
     if not verify_password(payload.old_password, current_user.password_hash):
-        raise HTTPException(status_code=400, detail="Old password is incorrect")
+        raise HTTPException(status_code=400, detail="旧密码错误")
 
     store.update_password(current_user.id, hash_password(payload.new_password))
     return {"status": "ok"}
@@ -161,7 +163,7 @@ def rotate_key(
 
     secret = payload.new_secret_key.strip()
     if len(secret) < 32:
-        raise HTTPException(status_code=400, detail="new_secret_key must be at least 32 characters")
+        raise HTTPException(status_code=400, detail="new_secret_key 长度至少为 32 个字符")
 
     new_kid = payload.new_key_id.strip() if payload.new_key_id else None
     if new_kid is not None and len(new_kid) == 0:
@@ -208,7 +210,7 @@ async def create_task(
 async def run_task(task_id: str, current_user: UserRecord = Depends(get_current_user)) -> TaskStatusResponse:
     record = store.get(task_id)
     if not record:
-        raise HTTPException(status_code=404, detail="Task not found")
+        raise HTTPException(status_code=404, detail="任务不存在")
     _check_task_access(record, current_user)
 
     # Use signatures bound to our configured celery_app to avoid falling back
@@ -225,7 +227,7 @@ async def run_task(task_id: str, current_user: UserRecord = Depends(get_current_
         failed = store.update(
             task_id,
             status=TaskStatus.failed,
-            message=f"Celery dispatch failed: {exc}",
+            message=f"Celery 派发失败: {exc}",
             progress=100,
         )
         if failed:
@@ -239,11 +241,11 @@ async def run_task(task_id: str, current_user: UserRecord = Depends(get_current_
                     created_at=failed.updated_at,
                 ).model_dump(mode="json"),
             )
-        raise HTTPException(status_code=503, detail="Task dispatch failed") from exc
+        raise HTTPException(status_code=503, detail="任务派发失败") from exc
 
     updated = store.update(task_id, status=TaskStatus.queued, message="Task enqueued", progress=1)
     if not updated:
-        raise HTTPException(status_code=404, detail="Task not found")
+        raise HTTPException(status_code=404, detail="任务不存在")
 
     celery_task_id = str(getattr(async_result, "id", ""))
 
@@ -263,7 +265,7 @@ async def run_task(task_id: str, current_user: UserRecord = Depends(get_current_
     )
     latest = store.get(task_id)
     if not latest:
-        raise HTTPException(status_code=404, detail="Task not found")
+        raise HTTPException(status_code=404, detail="任务不存在")
     return _task_to_response(latest)
 
 
@@ -276,13 +278,13 @@ def get_all_tasks(current_user: UserRecord = Depends(get_current_user)) -> list[
 def delete_task(task_id: str, current_user: UserRecord = Depends(get_current_user)) -> dict:
     record = store.get(task_id)
     if not record:
-        raise HTTPException(status_code=404, detail="Task not found")
+        raise HTTPException(status_code=404, detail="任务不存在")
     _check_task_access(record, current_user)
     
     # Remove from DB
     deleted = store.delete(task_id)
     if not deleted:
-        raise HTTPException(status_code=500, detail="Failed to delete task from database")
+        raise HTTPException(status_code=500, detail="删除数据库任务失败")
         
     # Remove from disk
     task_root = shared_root() / "tasks" / task_id
@@ -299,13 +301,13 @@ def delete_task(task_id: str, current_user: UserRecord = Depends(get_current_use
 def download_report(task_id: str, current_user: UserRecord = Depends(get_current_user)):
     record = store.get(task_id)
     if not record:
-        raise HTTPException(status_code=404, detail="Task not found")
+        raise HTTPException(status_code=404, detail="任务不存在")
     _check_task_access(record, current_user)
 
     pdf_ref = record.result.get("pdf", "")
     pdf = resolve_shared_path(str(pdf_ref))
     if not pdf.exists():
-        raise HTTPException(status_code=404, detail="Report not ready")
+        raise HTTPException(status_code=404, detail="报告尚未生成")
         
     # Return the file as a downloadable attachment
     return FileResponse(path=pdf, filename=pdf.name, media_type='application/pdf')
@@ -314,7 +316,7 @@ def download_report(task_id: str, current_user: UserRecord = Depends(get_current
 def get_task(task_id: str, current_user: UserRecord = Depends(get_current_user)) -> TaskStatusResponse:
     record = store.get(task_id)
     if not record:
-        raise HTTPException(status_code=404, detail="Task not found")
+        raise HTTPException(status_code=404, detail="任务不存在")
     _check_task_access(record, current_user)
     return _task_to_response(record)
 
@@ -351,7 +353,20 @@ def get_task_logs(
 
 @app.websocket(f"{settings.api_prefix}/tasks/{{task_id}}/ws")
 async def task_ws(task_id: str, websocket: WebSocket) -> None:
-    token = websocket.query_params.get("token")
+    # Get token from SEC-WEBSOCKET-PROTOCOL header instead of URL to avoid leaking in proxy logs and browser history
+    token = None
+    if "sec-websocket-protocol" in websocket.headers:
+        protocols = websocket.headers.get("sec-websocket-protocol", "").split(",")
+        for p in protocols:
+            p = p.strip()
+            if p and p != "undefined":  # sometimes browsers send undefined
+                token = p
+                break
+                
+    # Fallback to query parameter for backwards compatibility if needed during transition
+    if not token:
+        token = websocket.query_params.get("token")
+        
     if not token:
         await websocket.close(code=1008)
         return
@@ -372,7 +387,7 @@ async def task_ws(task_id: str, websocket: WebSocket) -> None:
         await websocket.close(code=1008)
         return
 
-    await websocket.accept()
+    await websocket.accept(subprotocol=token)
     cursor = 0
     try:
         while True:

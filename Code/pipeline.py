@@ -89,7 +89,7 @@ def run_preprocess_stage(
         copied_input_path = os.path.join(input_stage_dir, os.path.basename(paths["image_path"]))
         shutil.copy2(paths["image_path"], copied_input_path)
 
-        print("[1/3] Starting image processing...")
+        print("Starting image processing...")
         pretreated_output_path = os.path.join(pretreated_stage_dir, "pretreated.jpg")
         pretreated_image_path = preprocess_image(
             copied_input_path, pretreated_output_path, max_size_mb=max_size_mb
@@ -100,7 +100,7 @@ def run_preprocess_stage(
 
         points = extract_to_csv(dyed_image_path, output_csv, debug_dir=debug_dir)
         points_count = len(points)
-        print(f"[1/3] Image processing completed: {points_count} points extracted.")
+        print(f"Image processing completed: {points_count} points extracted.")
 
     return {
         "points_count": points_count,
@@ -126,14 +126,14 @@ def run_rpa_stage(
     omnic_pdf = os.path.abspath(omnic_pdf)
     os.makedirs(os.path.dirname(omnic_pdf), exist_ok=True)
 
-    print("[2/3] Starting RPA retrieval...")
+    print("Starting IR retrieval...")
     omnic_workflow = OmnicRpa(
         omnic_exe=omnic_exe,
         csv_path=output_csv,
         pdf_path=omnic_pdf,
     )
     omnic_workflow.run()
-    print(f"[2/3] Retrieval completed.")
+    print("IR retrieval completed.")
     return omnic_pdf
 
 
@@ -146,9 +146,9 @@ def run_postprocess_stage(
     omnic_pdf = os.path.abspath(omnic_pdf)
     final_pdf = os.path.abspath(final_pdf)
 
-    print("[3/3] Generating diagnostic report...")
+    print("Generating diagnostic report...")
     generate_report(csv_path=output_csv, pdf_path=omnic_pdf, output_path=final_pdf)
-    print(f"[3/3] Report generated! Saved to -> {final_pdf}")
+    print(f"Report generated! Saved to -> {final_pdf}")
     return final_pdf
 
 def run_pipeline(

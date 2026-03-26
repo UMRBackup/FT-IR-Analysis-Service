@@ -107,7 +107,7 @@ def decode_access_token(token: str) -> TokenClaims:
 
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid or expired token",
+        detail="无效或已过期的登录令牌",
     ) from last_error
 
 
@@ -117,7 +117,7 @@ def get_user_from_token(token: str) -> UserRecord:
     if not user or user.username != claims.username:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid user in token",
+            detail="登录令牌中的用户信息无效",
         )
     return user
 
@@ -128,6 +128,6 @@ def get_current_user(
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
+            detail="需要先登录认证",
         )
     return get_user_from_token(credentials.credentials)

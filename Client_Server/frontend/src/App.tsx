@@ -19,6 +19,14 @@ const MAX_VISIBLE_LOGS = 12;
 const TOKEN_STORAGE_KEY = "ftir_access_token";
 const USERNAME_PATTERN = /^[A-Za-z0-9_-]{3,8}$/;
 const PASSWORD_PATTERN = /^\S{6,16}$/;
+type AppView = "home" | "change-password";
+
+function getViewFromHash(hash: string): AppView {
+  if (hash === "#/change-password") {
+    return "change-password";
+  }
+  return "home";
+}
 
 function validateUsername(value: string): string {
   if (!value) return "";
@@ -94,6 +102,7 @@ export function App() {
 
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [view, setView] = useState<AppView>(() => getViewFromHash(window.location.hash));
 
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -126,6 +135,23 @@ export function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const onHashChange = () => {
+      setView(getViewFromHash(window.location.hash));
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  function navigateTo(nextView: AppView) {
+    const nextHash = nextView === "change-password" ? "#/change-password" : "#/";
+    if (window.location.hash !== nextHash) {
+      window.location.hash = nextHash;
+      return;
+    }
+    setView(nextView);
+  }
+
   async function bootstrap(accessToken: string) {
     try {
       const currentUser = await getCurrentUser(accessToken);
@@ -153,6 +179,9 @@ export function App() {
     setTaskId("");
     setTask(null);
     setLogs([]);
+    setOldPassword("");
+    setNewPassword("");
+    navigateTo("home");
     wsRef.current?.close();
   }
 
@@ -262,7 +291,8 @@ export function App() {
       const created = await createTask(file, token);
       setTaskId(created.task_id);
 
-      const ws = new WebSocket(buildWsUrl(created.task_id, token));
+      // Pass token in protocols array instead of URL query parameter
+      const ws = new WebSocket(buildWsUrl(created.task_id), [token]);
       ws.onmessage = (evt) => {
         const event = JSON.parse(evt.data) as LogEvent;
         setLogs((prev) => {
@@ -311,11 +341,11 @@ export function App() {
   if (!user) {
     return (
       <main className="page">
-        <section className="card">
+        <section className="card auth-card">
           <h1>FT-IR 解析</h1>
-          <p>请先登录后再使用任务功能。</p>
+          <p className="auth-subtitle">请先登录后再使用任务功能。</p>
 
-          <div className="row">
+          <div className="row auth-mode-switch">
             <button onClick={() => setAuthMode("login")} disabled={authMode === "login"}>
               登录
             </button>
@@ -324,40 +354,45 @@ export function App() {
             </button>
           </div>
 
-          <label htmlFor="username">用户名</label>
-          <input
-            id="username"
-            type="text"
-            autoComplete="username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className={usernameError ? "input-invalid" : ""}
-          />
-          {usernameError ? <p className="field-error">{usernameError}</p> : null}
+          <div className="auth-form-shell">
+            <div className="auth-main">
+              <label htmlFor="username">用户名</label>
+              <input
+                id="username"
+                type="text"
+                autoComplete="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className={usernameError ? "input-invalid" : ""}
+              />
+              {usernameError ? <p className="field-error">{usernameError}</p> : null}
 
-          <label htmlFor="password">密码</label>
-          <input
-            id="password"
-            type="password"
-            autoComplete={authMode === "login" ? "current-password" : "new-password"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={authMode === "register" && passwordError ? "input-invalid" : ""}
-          />
-          {authMode === "register" && passwordError ? <p className="field-error">{passwordError}</p> : null}
+              <label htmlFor="password">密码</label>
+              <input
+                id="password"
+                type="password"
+                autoComplete={authMode === "login" ? "current-password" : "new-password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={authMode === "register" && passwordError ? "input-invalid" : ""}
+              />
+              {authMode === "register" && passwordError ? <p className="field-error">{passwordError}</p> : null}
 
-          <div className="rules-box">
-            <p className="rules-title">账号密码规则</p>
-            <ul className="rules-list">
-              <li>用户名：3-8 位，仅允许字母、数字、下划线(_)、短横杠(-)，不允许空格。</li>
-              <li>密码：6-16 位，必须同时包含字母和数字，可含符号（如 !@#），不允许空格。</li>
-            </ul>
+              <button onClick={handleAuth} disabled={!canSubmitAuth} className="auth-submit">
+                {authMode === "login" ? "登录" : "注册并登录"}
+              </button>
+
+              {authError ? <p className="error auth-error">{authError}</p> : null}
+            </div>
+
+            <div className="rules-box auth-rules">
+              <p className="rules-title">账号密码规则</p>
+              <ul className="rules-list">
+                <li>用户名：3-8 位，仅允许字母、数字、下划线(_)、短横杠(-)，不允许空格。</li>
+                <li>密码：6-16 位，必须同时包含字母和数字，可含符号（如 !@#），不允许空格。</li>
+              </ul>
+            </div>
           </div>
-
-          <button onClick={handleAuth} disabled={!canSubmitAuth}>
-            {authMode === "login" ? "登录" : "注册并登录"}
-          </button>
-          {authError ? <p className="error">{authError}</p> : null}
         </section>
       </main>
     );
@@ -366,127 +401,159 @@ export function App() {
   return (
     <main className="page">
       <section className="card" style={{ marginBottom: "16px" }}>
-        <div className="row" style={{ justifyContent: "space-between" }}>
-          <div>
+        <div className="header-row">
+          <div className="row">
             <strong>当前用户：</strong>
             <span className="badge">{user.username}</span>
             {user.is_admin ? <span className="badge">管理员</span> : null}
           </div>
-          <button onClick={handleLogout}>登出</button>
-        </div>
-
-        <h3 style={{ marginBottom: "8px" }}>修改密码</h3>
-        <p className="muted">新密码规则：6-16 位，包含字母和数字，可含符号，不允许空格。</p>
-        <div className="row">
-          <input
-            type="password"
-            placeholder="旧密码"
-            autoComplete="current-password"
-            value={oldPassword}
-            onChange={(e) => setOldPassword(e.target.value)}
-          />
-          <input
-            type="password"
-            placeholder="新密码"
-            autoComplete="new-password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            className={newPasswordError ? "input-invalid" : ""}
-          />
-          <button onClick={handleChangePassword} disabled={!oldPassword || !newPassword || !!newPasswordError}>
-            更新密码
-          </button>
-        </div>
-        {newPasswordError ? <p className="field-error">{newPasswordError}</p> : null}
-      </section>
-
-      <section className="card">
-        <h1>FT-IR 解析</h1>
-        <p>上传光谱图片或 CSV。</p>
-
-        <label htmlFor="upload">输入文件</label>
-        <input
-          id="upload"
-          type="file"
-          accept=".csv,image/*"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-        />
-
-        <div className="row">
-          <button onClick={onSubmit} disabled={!canSubmit}>
-            {loading ? "处理中..." : "创建并运行任务"}
-          </button>
-          <button onClick={onRefresh} disabled={!taskId}>
-            刷新任务状态
-          </button>
-          {taskId ? <span className="badge">Task ID: {taskId}</span> : null}
-        </div>
-
-        {error ? <p className="error">{error}</p> : null}
-
-        {task ? (
-          <div>
-            <h3>任务状态</h3>
-            <div className="row">
-              <span className="badge">状态: {task.status}</span>
-              <span className="badge">进度: {task.progress}%</span>
-            </div>
-            <p>{task.message}</p>
-            {task.result?.pdf ? (
-              <p>
-                报告路径: <code>{String(task.result.pdf)}</code>
-              </p>
-            ) : null}
+          <div className="row">
+            {view === "home" ? (
+              <button onClick={() => navigateTo("change-password")} className="ghost-button">
+                修改密码
+              </button>
+            ) : (
+              <button onClick={() => navigateTo("home")} className="ghost-button">
+                返回主页
+              </button>
+            )}
+            <button onClick={handleLogout}>登出</button>
           </div>
-        ) : null}
+        </div>
+      </section>
 
-        <div className="logs">
-          <h3>实时日志</h3>
-          <p className="muted">仅展示最近 {MAX_VISIBLE_LOGS} 条。</p>
-          {hiddenLogCount > 0 ? <p className="muted">已折叠 {hiddenLogCount} 条</p> : null}
-          {logs.length === 0 ? <p>暂无日志</p> : null}
-          {logs.map((log, idx) => (
-            <div className="log-item" key={`${log.created_at}-${idx}`}>
-              [{new Date(log.created_at).toLocaleTimeString()}] [{log.progress}%] {log.message}
+      {view === "change-password" ? (
+        <section className="card subpage-card">
+          <h1>修改密码</h1>
+          <p className="muted">新密码规则：6-16 位，包含字母和数字，可含符号，不允许空格。</p>
+          <div className="form-grid">
+            <label htmlFor="old-password">旧密码</label>
+            <input
+              id="old-password"
+              type="password"
+              placeholder="请输入旧密码"
+              autoComplete="current-password"
+              value={oldPassword}
+              onChange={(e) => setOldPassword(e.target.value)}
+            />
+
+            <label htmlFor="new-password">新密码</label>
+            <input
+              id="new-password"
+              type="password"
+              placeholder="请输入新密码"
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className={newPasswordError ? "input-invalid" : ""}
+            />
+
+            {newPasswordError ? <p className="field-error">{newPasswordError}</p> : null}
+
+            <div className="row">
+              <button onClick={handleChangePassword} disabled={!oldPassword || !newPassword || !!newPasswordError}>
+                更新密码
+              </button>
+              <button onClick={() => navigateTo("home")} className="ghost-button">
+                取消
+              </button>
             </div>
-          ))}
-        </div>
-      </section>
+          </div>
+        </section>
+      ) : null}
 
-      <section className="card" style={{ marginTop: "16px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3>我的历史任务</h3>
-          <button onClick={() => loadTasks()}>刷新列表</button>
-        </div>
-        {historyTasks.length === 0 ? (
-          <p className="muted">暂无历史任务</p>
-        ) : (
-          <table style={{ width: "100%", textAlign: "left", marginTop: "1rem", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ borderBottom: "1px solid #ccc" }}>
-                <th>任务 ID</th>
-                <th>状态</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {historyTasks.map((t) => (
-                <tr key={t.task_id} style={{ borderBottom: "1px solid #eee" }}>
-                  <td style={{ padding: "0.5rem" }}>
-                    <small>...{t.task_id.slice(-8)}</small>
-                  </td>
-                  <td style={{ padding: "0.5rem" }}>{t.status}</td>
-                  <td style={{ padding: "0.5rem", display: "flex", gap: "0.5rem" }}>
-                    {t.status === "done" && <button onClick={() => handleDownload(t.task_id)}>下载报告</button>}
-                    <button onClick={() => handleDelete(t.task_id)}>删除</button>
-                    <button onClick={() => setTaskId(t.task_id)}>查看状态</button>
-                  </td>
-                </tr>
+      {view === "home" ? (
+        <>
+          <section className="card">
+            <h1>FT-IR 解析</h1>
+            <p>上传光谱图片或 CSV。</p>
+
+            <label htmlFor="upload">输入文件</label>
+            <input
+              id="upload"
+              type="file"
+              accept=".csv,image/*"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            />
+
+            <div className="row">
+              <button onClick={onSubmit} disabled={!canSubmit}>
+                {loading ? "处理中..." : "创建并运行任务"}
+              </button>
+              <button onClick={onRefresh} disabled={!taskId}>
+                刷新任务状态
+              </button>
+              {taskId ? <span className="badge">Task ID: {taskId}</span> : null}
+            </div>
+
+            {error ? <p className="error">{error}</p> : null}
+
+            {task ? (
+              <div>
+                <h3>任务状态</h3>
+                <div className="row">
+                  <span className="badge">状态: {task.status}</span>
+                  <span className="badge">进度: {task.progress}%</span>
+                </div>
+                <p>{task.message}</p>
+                {task.result?.pdf ? (
+                  <p>
+                    报告路径: <code>{String(task.result.pdf)}</code>
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
+            <div className="logs">
+              <h3>实时日志</h3>
+              <p className="muted">仅展示最近 {MAX_VISIBLE_LOGS} 条。</p>
+              {hiddenLogCount > 0 ? <p className="muted">已折叠 {hiddenLogCount} 条</p> : null}
+              {logs.length === 0 ? <p>暂无日志</p> : null}
+              {logs.map((log, idx) => (
+                <div className="log-item" key={`${log.created_at}-${idx}`}>
+                  [{new Date(log.created_at).toLocaleTimeString()}] [{log.progress}%] {log.message}
+                </div>
               ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+            </div>
+
+          </section>
+
+          <section className="card" style={{ marginTop: "16px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3>我的历史任务</h3>
+              <button onClick={() => loadTasks()}>刷新列表</button>
+            </div>
+            {historyTasks.length === 0 ? (
+              <p className="muted">暂无历史任务</p>
+            ) : (
+              <table style={{ width: "100%", textAlign: "left", marginTop: "1rem", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid #ccc" }}>
+                    <th>任务 ID</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historyTasks.map((t) => (
+                    <tr key={t.task_id} style={{ borderBottom: "1px solid #eee" }}>
+                      <td style={{ padding: "0.5rem" }}>
+                        <small>...{t.task_id.slice(-8)}</small>
+                      </td>
+                      <td style={{ padding: "0.5rem" }}>{t.status}</td>
+                      <td style={{ padding: "0.5rem", display: "flex", gap: "0.5rem" }}>
+                        {t.status === "done" && <button onClick={() => handleDownload(t.task_id)}>下载报告</button>}
+                        <button onClick={() => handleDelete(t.task_id)}>删除</button>
+                        <button onClick={() => setTaskId(t.task_id)}>查看状态</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </section>
+        </>
+      ) : null}
     </main>
   );
 }

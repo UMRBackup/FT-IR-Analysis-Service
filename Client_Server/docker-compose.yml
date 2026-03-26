@@ -67,6 +67,15 @@ services:
       redis:
         condition: service_healthy
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: ftir-frontend:local
+    container_name: ftir-frontend
+    depends_on:
+      - api
+
   # Container worker only handles preprocess/postprocess queues.
   # RPA queue must be consumed by Windows workers with OMNIC installed.
   worker_prepost:

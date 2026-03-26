@@ -102,8 +102,8 @@ CELERY_RESULT_BACKEND=redis://<API_HOST_IP>:6379/1
 - 服务签发 token 始终使用当前密钥 (`JWT_SECRET_KEY`, `JWT_CURRENT_KID`)。
 - 服务验签时会同时接受当前密钥和上一把密钥（`JWT_PREVIOUS_SECRET_KEY`）。
 - 管理员可调用以下接口在线轮换（无需重启进程）：
-   - `GET /api/v1/auth/key-info`
-   - `POST /api/v1/auth/rotate-key`
+  - `GET /api/v1/auth/key-info`
+  - `POST /api/v1/auth/rotate-key`
 
 然后在每台 Worker 启动：
 
