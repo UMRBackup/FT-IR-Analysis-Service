@@ -2,176 +2,302 @@
 
 [English](README.md) | [简体中文](README_zh.md)
 
-This project provides a complete, automated pipeline for Fourier Transform Infrared (FT-IR) spectroscopy: from image recognition and data processing to intelligent diagnostic report generation.
-It includes the core engine for Computer Vision (CV) extraction, Robotic Process Automation (RPA), and LLM-based report generation, as well as a Web-based task distribution and asynchronous execution platform (B/S architecture) suitable for batch processing and network deployments.
+This repository provides a full FT-IR automation stack covering data extraction, OMNIC RPA retrieval, AI report generation, and a Web-based task dispatch platform for asynchronous execution.
 
-## ✨ Key Features
+The project currently supports two usage modes:
 
-- **Multi-Modal Input Processing**: Supports direct input of FT-IR spectrum images (testing feature) as well as pre-exported CSV raw data files (completed feature).
-- **Image Recognition & Extraction**: Incorporates CV-based pre-processing (`pretreat.py`), spectrum curve tracking/dyeing (`curve_dye.py`), and high-precision coordinate extraction (`extract.py`).
-- **Software Automation (RPA)**: Uses RPA scripts (`ir_rpa.py`) to automatically search, control the OMNIC desktop software in the background, and export analysis spectrum PDFs.
-- **AI Report Generation**: Combines the extracted curve characteristics and spectrum results to automatically typeset and generate formatted PDF/HTML diagnostic reports.
-- **Web Service Integration**: Provides a sleek Web interface (React + Vite) allowing any device on the local network to upload files, manage tasks, poll status, and view real-time WebSocket logs. The FastAPI + Celery backend provides high-concurrency asynchronous queue scheduling.
-- **Dual Mode Support**: In addition to the Web Server mode, an intuitive GUI (`run_gui.py`) and a lightweight CLI (`pipeline.py`) are still reserved for quick local processing.
+- Web client + FastAPI/Celery backend for multi-user submission and centralized deployment.
+- Local GUI/CLI mode for algorithm debugging, offline verification, and single-machine troubleshooting.
 
-## 📂 Core Directory Structure
+## Capabilities
+
+- Upload CSV files and images into the same asynchronous processing pipeline.
+- Use a Web client with registration, login, password change, task history, live logs, report download, and task deletion.
+- Run tasks through the `preprocess -> rpa -> postprocess` chain.
+- Offload the OMNIC stage to Windows RPA workers while container workers handle preprocess and postprocess only.
+- Store task inputs, outputs, and intermediate artifacts in shared storage.
+- Keep `Code/run_gui.py` and `Code/pipeline.py` as standalone local entry points.
+
+## Directory Layout
 
 ```text
 IR-Project/
-├── Client_Server/            # Web server and client components
-│   ├── backend/              # FastAPI backend & Celery async task processing
-│   ├── frontend/             # React + Vite frontend interface
-│   └── docker-compose.yml    # Docker orchestration for API & database
-├── Code/                     # Core business logic and algorithm codebase
-│   ├── pipeline.py           # Core processing pipeline scaffold
-│   ├── run_gui.py            # Local Tkinter graphical interface entry
-│   ├── image_processing/     # Image processing & CV extraction module
-│   ├── software_agent/       # OMNIC software RPA control module
-│   ├── report_generator/     # Analysis report typesetting & generation module
-│   └── Demo/                 # Testing & sample data
-└── shared_storage/           # Shared volume for file exchange between server and worker
+├── Client_Server/
+│   ├── backend/                  # FastAPI, Celery, auth, task orchestration
+│   ├── frontend/                 # React + Vite Web client
+│   ├── deploy/nginx/conf.d/      # Reverse proxy and WebSocket forwarding config
+│   ├── docker-compose.yml        # Internal stack (api/mysql/redis/frontend/worker_prepost)
+│   └── docker-compose.proxy.yml  # Public Nginx entrypoint on port 80
+├── Code/
+│   ├── pipeline.py               # Local CLI pipeline
+│   ├── run_gui.py                # Local Tkinter GUI
+│   ├── image_processing/         # Image preprocessing and extraction
+│   ├── software_agent/           # OMNIC automation
+│   └── report_generator/         # Report generation
+└── shared_storage/               # Shared task inputs, outputs, and artifacts
 ```
 
----
+## Architecture
 
-## 🚀 Deployment & Running Options
+Recommended topology:
 
-This project supports two running environments: **A. As a Distributed Web Service** and **B. As a Standalone Local App**.
-*(Note: Regardless of the strategy, because it involves RPA, the physical host running the RPA Worker must be running a Windows desktop environment with OMNIC software installed.)*
+- A Linux or Docker host runs `mysql + redis + api + frontend + worker_prepost + nginx`.
+- One or more Windows machines run the `rpa_queue` worker with OMNIC installed.
+- The Docker host and every Windows worker access the same shared storage.
 
-### Option A: Web Client + Async Service
+One current behavior change matters for deployment:
 
-The system breaks down jobs into a three-stage serial chain (`preprocess -> rpa -> postprocess`), with frontend states reflecting `queued -> preprocessing -> rpa_running -> postprocessing -> done/failed`.
+- `mysql`, `redis`, and `api` are now only `expose`d inside the Docker network and are no longer published directly to host ports.
+- The default public entrypoint is Nginx from `docker-compose.proxy.yml`, publishing port `80`.
+- If an external Windows worker must connect directly to MySQL or Redis, you need an additional reachable endpoint for those services, such as explicit port publishing, an internal proxy, or existing infrastructure. Running the default Compose stack alone does not make container-internal MySQL or Redis reachable from another machine.
 
-Recommended production topology:
+## Prerequisites
 
-- **Container side (Linux/Docker)**: run `api + mysql + pre/post worker` for preprocessing and postprocessing.
-- **Windows remote side (one or more machines)**: run `rpa worker` only for OMNIC automation.
+### 1. Docker host
 
-This allows horizontal scaling of RPA workers while keeping CPU-bound pre/post stages inside containers.
+- Install Docker and Docker Compose.
+- Ensure the host can access the NAS/SMB share.
+- Provide the following environment variables for the CIFS volume in `Client_Server/docker-compose.yml`:
 
-**Step 1: Start Base Services (MySQL + FastAPI + pre/post worker)**
-
-It is recommended to deploy via Docker:
-
-```bash
-cd Client_Server
-docker compose up -d --build
+```env
+NAS_HOST=192.168.1.77
+NAS_SHARE=zhaozhixuan/shared_storage
+NAS_USER=<your_nas_user>
+NAS_PASS=<your_nas_password>
+NAS_VERS=3.0
 ```
 
-*Tip: For the requirement of API Keys (Openrouter, Dashscope, CAS, SerpAPI already in use), please configure your system environment variables on the host machine or modify in compose file before executing `docker compose up`.*
+- In production, also set auth and bootstrap values explicitly:
 
-**Step 2: Start RPA Workers on one or multiple Windows machines (rpa_queue only)**
+```env
+JWT_SECRET_KEY=<replace_with_a_long_random_secret>
+JWT_PREVIOUS_SECRET_KEY=
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=10080
+JWT_CURRENT_KID=v1
+JWT_PREVIOUS_KID=
+INITIAL_ADMIN_USERNAME=admin
+INITIAL_ADMIN_PASSWORD=<replace_immediately>
+```
 
-This MUST run in a native Windows environment where OMNIC is installed (not inside Linux/Docker).
+Notes:
 
-If the worker runs on another machine, satisfy these 4 rules first:
+- If you do not override them, the current Compose defaults are `admin` / `femtotest210` for the initial admin account. That is only acceptable for internal testing.
+- Only admins can call the JWT key rotation endpoints.
 
-1. **Use the same physical shared directory**: both API host and worker machine must mount the same network share, for example as `Y:\shared_storage`.
-2. **Keep drive mapping consistent when possible**:  the worker should preferably use the same drive letter as the API host to avoid path drift.
-3. **DB/Broker IP configuration**: in worker-side `.env`, set `DATABASE_URL / CELERY_BROKER_URL / CELERY_RESULT_BACKEND` host to API host IP.
-4. **Open firewall/network path**: worker must reach API host ports `3307` (MySQL DB) and `6379` (Redis broker/result backend).
+### 2. Windows RPA workers
 
-Example mapping command on Windows (run on both machines, point to the same share):
+- Install OMNIC.
+- Install Python, ideally matching the backend major version.
+- Make sure the worker can access the same shared storage as the Docker host.
+- If the worker uses a UNC path, you can provide `UNC_USERNAME` / `UNC_PASSWORD` in `Client_Server/backend/.env`. Even so, a mapped drive such as `Y:\shared_storage` is still the safer default on Windows because it avoids common session and credential conflicts.
+
+## Recommended Deployment: Unified Web Entry
+
+This is the deployment path that matches the current repository configuration.
+
+### 1. Start the container-side stack
 
 ```powershell
-net use Y: \\<fileserver>\ftir_shared /persistent:yes
+cd Client_Server
+docker compose -f docker-compose.yml -f docker-compose.proxy.yml up -d --build
 ```
 
-Recommended minimum `Client_Server/backend/.env` on the worker machine:
+After startup:
+
+- Open `http://<host-ip>/` in a browser.
+- Nginx forwards `/api/` and `/api/v1/tasks/<task_id>/ws` to the backend.
+- The frontend build is served by the containerized frontend Nginx, so browser and API remain same-origin.
+
+### 2. Start the Windows RPA worker
+
+On the Windows machine:
+
+```powershell
+cd Client_Server\backend
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+pip install -r ..\..\Code\requirements.txt
+```
+
+Create or update `Client_Server/backend/.env` with at least:
 
 ```env
 CODE_ROOT=C:\path\to\IR-Project\Code
 STORAGE_ROOT=Y:\shared_storage
 SHARED_STORAGE_ROOT=Y:\shared_storage
 
-JWT_SECRET_KEY=<replace with a strong random secret>
+JWT_SECRET_KEY=<same_current_secret_as_api>
 JWT_PREVIOUS_SECRET_KEY=
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=10080
 JWT_CURRENT_KID=v1
 JWT_PREVIOUS_KID=
 
-DATABASE_URL=mysql+pymysql://ftir:ftir@<API_HOST_IP>:3307/ftir
-CELERY_BROKER_URL=redis://<API_HOST_IP>:6379/0
-CELERY_RESULT_BACKEND=redis://<API_HOST_IP>:6379/1
+DATABASE_URL=mysql+pymysql://ftir:ftir@<DB_HOST>:3306/ftir
+CELERY_BROKER_URL=redis://<REDIS_HOST>:6379/0
+CELERY_RESULT_BACKEND=redis://<REDIS_HOST>:6379/1
+
+INITIAL_ADMIN_USERNAME=admin
+INITIAL_ADMIN_PASSWORD=<same_policy_as_server>
 ```
 
-Online dual-key rotation notes:
-
-- New tokens are always signed with the current key (`JWT_SECRET_KEY`, `JWT_CURRENT_KID`).
-- Token verification accepts both current and previous key (`JWT_PREVIOUS_SECRET_KEY`) during transition.
-- Admin can rotate keys at runtime (no process restart) through:
-   - `GET /api/v1/auth/key-info`
-   - `POST /api/v1/auth/rotate-key`
-
-Then start on each Windows worker machine:
+Then start the worker that consumes only the RPA queue:
 
 ```powershell
-cd Client_Server\backend
-.venv\Scripts\activate
-pip install -r requirements.txt
-pip install -r ..\..\Code\requirements.txt
-
-# Force single-process mode (-P solo) to avoid OMNIC UI conflicts
 celery -A app.celery_app:celery_app worker --loglevel=info -P solo -Q rpa_queue
 ```
 
-> Note: On Windows, the default pool may trigger `fast_trace_task` related failures. The code already enforces `solo` on Windows, and keeping `-P solo` in command is still recommended.
->
-> Scaling: start worker #2/#3/... with the same command on additional Windows machines; Celery distributes jobs across all workers subscribed to `rpa_queue`.
+Notes:
 
-**Step 3: Start the Frontend**
+- Keep `-P solo` on Windows. This is the stable worker mode for OMNIC automation.
+- You can scale horizontally by starting multiple Windows workers subscribed to `rpa_queue`.
+- Worker-side JWT settings should match the active server-side key configuration.
 
-Run the frontend instance on the same machine (or another locally networked machine):
+### 3. First login and user model
 
-```bash
+The Web client now has a real account system:
+
+- Sign in with the bootstrap admin account for the first admin session.
+- Users can self-register from the frontend.
+- Newly registered users are not admins.
+- Username rule: 3 to 8 characters, letters, digits, underscore, and hyphen only.
+- Password rule: 6 to 16 characters, no spaces, and must contain at least one letter and one digit.
+- Logged-in users can change their password from the frontend.
+
+### 4. Client workflow
+
+After login, the normal Web workflow is:
+
+1. Upload a `.csv` file or an image.
+2. Click create-and-run.
+3. Watch live WebSocket logs and task progress.
+4. Use the history list to inspect, delete, or download reports.
+
+Task statuses are:
+
+- `queued`
+- `preprocessing`
+- `rpa_pending`
+- `rpa_running`
+- `postprocessing`
+- `done`
+- `failed`
+
+Artifacts are stored under shared storage in the following structure:
+
+```text
+shared_storage/
+└── tasks/<task_id>/
+    ├── input/
+    └── output/
+```
+
+## Development Notes
+
+### Internal stack only
+
+If you only want the internal containers and do not need the public reverse proxy, run:
+
+```powershell
+cd Client_Server
+docker compose up -d --build
+```
+
+Be aware:
+
+- This does not publish frontend, API, MySQL, or Redis to host ports.
+- It is mainly useful for container-internal validation or when you already have another reverse proxy in front.
+
+### Frontend local development
+
+You can still run the Vite dev server directly:
+
+```powershell
 cd Client_Server\frontend
 npm install
 npm run dev
 ```
 
-Afterward, simply visit the frontend URL in your browser to dispatch and monitor tasks.
+The frontend now includes a Vite dev proxy for `/api`, with WebSocket support enabled. By default it forwards to `http://127.0.0.1:8000`.
 
----
+If your backend is reachable at a different address, add `Client_Server/frontend/.env.development` with:
 
-### Option B: Standalone Local App
-
-If you only need to process single tasks on a local machine without starting a web platform.
-
-**Environment Setup**
-
-```bash
-cd Code
-python -m venv .venv
-.\.venv\Scripts\activate
-pip install -r requirements.txt
+```env
+VITE_DEV_PROXY_TARGET=http://<your-api-host>:8000
 ```
 
-**Using the Graphical User Interface (GUI)**
-Quickly launch the processing panel with real-time log display:
+This lets the frontend keep using `/api/v1` while Vite forwards requests to the configured backend target. That means:
 
-```bash
+- `npm run dev` is fine for UI work.
+- For end-to-end browser testing, point `VITE_DEV_PROXY_TARGET` at your reachable backend or Nginx entrypoint.
+
+## Standalone Local Mode
+
+If you do not need the Web platform, run the full pipeline locally on Windows from the `Code` directory.
+
+### GUI
+
+```powershell
+cd Code
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
 python run_gui.py
 ```
 
-**Using the Command Line Interface (CLI)**
+### CLI
 
-```bash
-# Format: python pipeline.py <Input File> [Output Directory]
-python pipeline.py Demo/test_image.jpg ./output
-python pipeline.py Demo/7343-3.CSV ./output
+```powershell
+cd Code
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+python pipeline.py Demo/7343-3.CSV .\output
 ```
 
----
+The CLI creates a timestamped subdirectory under the output root and writes the report plus intermediate files there.
 
-## ⚠️ Notes & Roadmap
+## Troubleshooting
 
-1. `shared_storage` is the data bridge between API and worker. In cross-machine deployment, both sides must point to the same network share, otherwise workers may fail with missing input/output files.
-2. Worker machine should also install `backend/requirements.txt`; missing requirements can break RPA stage.
-3. Minimal connectivity checklist:
-   - On API host, run `docker compose ps` and confirm `mysql` + `api` are healthy/running.
-   - On API host, also confirm `worker_prepost` is running.
-   - On worker machine, run `Test-NetConnection <API_HOST_IP> -Port 3307`.
-   - After Windows worker starts, logs should show subscription to `rpa_queue`.
-4. The future plan is to integrate **authorization/account system** (secure dispatch). Temporarily administration is allocated to all users for the project is still at internal test stage.
+### 1. The homepage loads, but task APIs or live logs fail
+
+Check the following first:
+
+- You are accessing the app through the unified Nginx entrypoint, not directly through the Vite dev server.
+- Your reverse proxy still forwards `/api/`.
+- Your reverse proxy keeps WebSocket upgrade headers for `/api/v1/tasks/.*/ws`.
+
+### 2. The Windows worker says the shared path is not accessible
+
+Check the following first:
+
+- `STORAGE_ROOT` and `SHARED_STORAGE_ROOT` point to the same physical share used by the Docker host.
+- The expected mapped drive, such as `Y:`, exists in the worker session.
+- If you are using UNC, verify credentials and look for Windows 1219 or 1326 session conflicts.
+
+### 3. A remote Windows worker cannot reach MySQL or Redis
+
+Check the current config:
+
+- The default Compose stack does not publish MySQL or Redis to the host.
+- You must provide reachable endpoints such as `<DB_HOST>:3306` and `<REDIS_HOST>:6379`, then point the worker `.env` to those addresses.
+- If you are still following an older document that used `3307`, that was the previous host-mapped MySQL port. The current default Compose stack uses the internal MySQL port `3306`.
+
+### 4. The worker hits Celery pool errors on startup
+
+Make sure the command keeps:
+
+```powershell
+-P solo
+```
+
+That is the stable Windows configuration for the OMNIC RPA worker.
+
+## Security Recommendations
+
+- Replace the default admin password and default JWT secret immediately.
+- Do not keep example credentials or example secrets in production.
+- If you expose the service outside a trusted LAN, add HTTPS, a real domain, and tighter CORS policy on top of the existing Nginx setup.
+- The backend currently still uses `allow_origins=["*"]`; narrow that down for production.

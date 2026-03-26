@@ -1,177 +1,303 @@
-# FT-IR AI Analysis Report Generator & Service (红外光谱分析与报告生成系统)
+# FT-IR AI Analysis Report Generator & Service
 
 [English](README.md) | [简体中文](README_zh.md)
 
-本项目是一套完整的自动化的红外光谱（FT-IR）图像识别、数据处理与诊断报告生成系统。
-包含了底层核心的图像信息提取、RPA自动化与大模型报告生成，同时外装了基于 Web 的任务分发与异步执行平台 (B/S架构)，能够实现任务并行和云端服务。
+本项目是一套面向 FT-IR 红外光谱处理的完整自动化系统，覆盖数据提取、OMNIC RPA 检索、AI 报告生成，以及基于 Web 的任务分发与异步执行平台。
 
-## ✨ 主要功能特性
+当前仓库同时包含两套使用方式：
 
-- **多模态输入处理**：支持直接输入红外光谱图像（功能测试中），也支持直接处理预先导出的 CSV 原始数据文件（已完善）。
-- **图像识别与提取**：包含基于计算机视觉的预处理 (`pretreat.py`)、光谱曲线染色 (`curve_dye.py`) 和高精度提取 (`extract.py`)。
-- **软件自动化控制 (RPA)**：通过 RPA 脚本 (`ir_rpa.py`) 在后台自动化检索、操控 OMNIC 桌面软件并导出分析图谱 PDF。
-- **AI 报告生成**：结合抓取的曲线数字特征与图谱结果，自动排版并生成格式化的 PDF/HTML 诊断报告。
-- **Web 服务化接入**：提供 Web 界面（React+Vite）让局域网内任意终端进行文件上传、任务管理、状态轮询和实时 WebSocket 日志查看。并由后端的 FastAPI + Celery 提供高并发的异步列队调度保护机制。
-- **本地双端并行支持**：除了 Web 大厅，仍然保留本地图形化端 (`run_gui.py`) 以及用于轻量调用的命令行接口 (`pipeline.py`)。
+- Web 客户端 + FastAPI/Celery 服务端，适合多人并行提交与集中式部署。
+- 本地 GUI/CLI 单机模式，适合算法调试、离线验证和快速排障。
 
-## 📂 核心目录结构
+## 主要能力
+
+- 支持 CSV 与图像文件上传，统一进入异步任务链处理。
+- 前端内置注册、登录、改密、任务历史、实时日志、报告下载与删除。
+- 后端将任务拆分为 `preprocess -> rpa -> postprocess` 三段链路。
+- RPA 阶段由安装了 OMNIC 的 Windows Worker 执行，容器侧仅负责预处理和后处理。
+- 报告输出为 PDF，任务中间产物和输入输出文件统一落在共享存储中。
+- 保留 `Code/run_gui.py` 与 `Code/pipeline.py` 两个本地入口，便于单机运行。
+
+## 目录结构
 
 ```text
 IR-Project/
-├── Client_Server/            # Web 服务端与客户端目录
-│   ├── backend/              # FastAPI 后端与 Celery 异步任务处理
-│   ├── frontend/             # React + Vite 前端界面
-│   └── docker-compose.yml    # API、数据库编排启动文件
-├── Code/                     # 核心业务算法代码库
-│   ├── pipeline.py           # 核心处理流水线脚手架
-│   ├── run_gui.py            # 本地 Tkinter 图形界面入口
-│   ├── image_processing/     # 图像处理与 CV 提取模块
-│   ├── software_agent/       # OMNIC 软件 RPA 控制模块
-│   ├── report_generator/     # 分析报告排版生成模块
-│   └── Demo/                 # 测试与样例数据
-└── shared_storage/           # 服务端与 Worker 环境交互传输的共享挂载存储区
+├── Client_Server/
+│   ├── backend/                  # FastAPI、Celery、认证、任务调度
+│   ├── frontend/                 # React + Vite Web 客户端
+│   ├── deploy/nginx/conf.d/      # 反向代理与 WebSocket 转发配置
+│   ├── docker-compose.yml        # 内部服务栈（api/mysql/redis/frontend/worker_prepost）
+│   └── docker-compose.proxy.yml  # 对外 Nginx 入口（默认 80 端口）
+├── Code/
+│   ├── pipeline.py               # 本地 CLI 处理流水线
+│   ├── run_gui.py                # 本地 Tkinter 图形界面
+│   ├── image_processing/         # 图像预处理与提取
+│   ├── software_agent/           # OMNIC 自动化控制
+│   └── report_generator/         # 报告生成
+└── shared_storage/               # 共享输入、输出与任务产物
 ```
 
----
+## 系统架构
 
-## 🚀 启动与运行方案
+推荐部署拓扑如下：
 
-本项目支持两套运行环境：**A. 作为分布式 Web 服务运行** 以及 **B. 作为本地独立软件运行**。
-*(注：不论哪种方案，由于涉及 RPA 控制，运行它的物理主机/Worker机必须处于 Windows 桌面环境并安装了 OMNIC 软件)*
+- Linux 或 Docker 宿主机运行 `mysql + redis + api + frontend + worker_prepost + nginx`。
+- 一台或多台 Windows 机器运行 `rpa_queue` Worker，并安装 OMNIC。
+- 容器宿主机与 Windows Worker 共同访问同一份共享存储。
 
-### 方案 A：Web 客户端与异步服务端运行
+当前 Compose 的默认行为有一个重要变化：
 
-系统已被编排为三段串接任务链 (`preprocess -> rpa -> postprocess`)，前端状态机包含 `queued -> preprocessing -> rpa_running -> postprocessing -> done/failed` 等。
+- `mysql`、`redis`、`api` 现在只在 Docker 内部网络中 `expose`，不再直接映射宿主机端口。
+- 默认对外入口是 `docker-compose.proxy.yml` 中的 Nginx，公开 `80` 端口。
+- 如果你要让 Docker 宿主机之外的 Windows Worker 直接连接 MySQL/Redis，需要额外提供可达的数据库与 Broker 地址，例如单独发布端口、走内网代理、或接入已有基础设施。仅执行默认 `docker compose up` 并不能让异机 Worker 直接连到容器内的 MySQL/Redis。
 
-推荐的生产拓扑：
+## 运行前准备
 
-- **容器侧（Linux/Docker）**：运行 `api + mysql + pre/post worker`，负责预处理和后处理。
-- **Windows 异机侧（可多台）**：仅运行 `rpa worker`，负责执行 OMNIC 自动化。
+### 1. 容器宿主机
 
-这样可以横向增加多台 RPA worker 提升吞吐，同时把 CPU 型预/后处理固定在容器侧。
+- 安装 Docker 与 Docker Compose。
+- 确保宿主机可以访问 NAS/SMB 共享目录。
+- 准备以下环境变量，供 `Client_Server/docker-compose.yml` 中的 CIFS 卷使用：
 
-**步骤 1：启动基础服务（MySQL + FastAPI + pre/post worker）**
-
-通过 Docker 快速启动：
-
-```bash
-cd Client_Server
-docker compose up -d --build
+```env
+NAS_HOST=192.168.1.77
+NAS_SHARE=zhaozhixuan/shared_storage
+NAS_USER=<your_nas_user>
+NAS_PASS=<your_nas_password>
+NAS_VERS=3.0
 ```
 
-*提示：环境变量所需的 KEY (目前使用了Openrouter、Dashscope、CAS、SerpAPI），请先在宿主机的系统环境变量配置或在docker配置文件中修改后，再执行 `docker compose up`。*
+- 生产环境同时建议提供以下密钥与管理员配置：
 
-**步骤 2：在一台或多台 Windows 机器启动 RPA Worker（仅消费 rpa_queue）**
+```env
+JWT_SECRET_KEY=<replace_with_a_long_random_secret>
+JWT_PREVIOUS_SECRET_KEY=
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=10080
+JWT_CURRENT_KID=v1
+JWT_PREVIOUS_KID=
+INITIAL_ADMIN_USERNAME=admin
+INITIAL_ADMIN_PASSWORD=<replace_immediately>
+```
 
-必须在有 OMNIC 的 Windows 原生环境下启动（不能放在 Linux 容器中）。
+说明：
 
-如果 Worker 部署在另一台机器，请先满足下面 4 条：
+- 如果未显式覆盖，Compose 当前默认管理员用户名为 `admin`，默认密码为 `femtotest210`。这只适合内测，正式环境必须替换。
+- 管理员可以访问 JWT 密钥轮换接口，普通注册用户不具备该权限。
 
-1. **共享目录必须是同一份物理目录**：API 宿主机与 Worker 机器要同时挂载到同一个网络共享。
-2. **共享盘符建议一致**：Worker 端和 API 宿主机建议使用同名盘符避免配置混淆。
-3. **数据库地址配置**：Worker 在异机时，`DATABASE_URL / CELERY_BROKER_URL / CELERY_RESULT_BACKEND` 里的主机名要改成 API 宿主机 IP。
-4. **防火墙放通端口**：至少保证 Worker 到 API 宿主机的 `3307`（MySQL 数据库）与 `6379`（Redis broker/结果后端）端口可达。
+### 2. Windows RPA Worker
 
-可参考 Windows 映射命令（两台机器都执行，映射到同一共享）：
+- 安装 OMNIC。
+- 安装 Python，建议与服务端保持同一主版本。
+- 能访问与容器侧相同的共享存储。
+- 如果使用 UNC 路径访问共享目录，必要时可在 `Client_Server/backend/.env` 中提供 `UNC_USERNAME` / `UNC_PASSWORD`。但在 Windows Worker 上仍然优先建议使用映射盘符，例如 `Y:\shared_storage`，可减少会话与凭据冲突。
+
+## 推荐部署方式：统一 Web 入口
+
+这是当前仓库最符合现状的启动方式。
+
+### 1. 启动容器侧服务
 
 ```powershell
-net use Y: \\<fileserver>\ftir_shared /persistent:yes
+cd Client_Server
+docker compose -f docker-compose.yml -f docker-compose.proxy.yml up -d --build
 ```
 
-Worker 机器上的 `Client_Server/backend/.env` 建议至少包含：
+启动后：
+
+- 浏览器访问 `http://<宿主机IP>/` 即可进入前端。
+- Nginx 会将 `/api/` 与 `/api/v1/tasks/<task_id>/ws` 代理到后端。
+- 前端构建产物由容器内 Nginx 提供，浏览器与 API 保持同源访问。
+
+### 2. 启动 Windows RPA Worker
+
+在 Windows 机器的仓库目录下执行：
+
+```powershell
+cd Client_Server\backend
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+pip install -r ..\..\Code\requirements.txt
+```
+
+创建或更新 `Client_Server/backend/.env`，至少包含：
 
 ```env
 CODE_ROOT=C:\path\to\IR-Project\Code
 STORAGE_ROOT=Y:\shared_storage
 SHARED_STORAGE_ROOT=Y:\shared_storage
 
-JWT_SECRET_KEY=<请替换为高强度随机密钥>
+JWT_SECRET_KEY=<same_current_secret_as_api>
 JWT_PREVIOUS_SECRET_KEY=
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=10080
 JWT_CURRENT_KID=v1
 JWT_PREVIOUS_KID=
 
-DATABASE_URL=mysql+pymysql://ftir:ftir@<API_HOST_IP>:3307/ftir
-CELERY_BROKER_URL=redis://<API_HOST_IP>:6379/0
-CELERY_RESULT_BACKEND=redis://<API_HOST_IP>:6379/1
+DATABASE_URL=mysql+pymysql://ftir:ftir@<DB_HOST>:3306/ftir
+CELERY_BROKER_URL=redis://<REDIS_HOST>:6379/0
+CELERY_RESULT_BACKEND=redis://<REDIS_HOST>:6379/1
+
+INITIAL_ADMIN_USERNAME=admin
+INITIAL_ADMIN_PASSWORD=<same_policy_as_server>
 ```
 
-双密钥在线轮换说明：
-
-- 服务签发 token 始终使用当前密钥 (`JWT_SECRET_KEY`, `JWT_CURRENT_KID`)。
-- 服务验签时会同时接受当前密钥和上一把密钥（`JWT_PREVIOUS_SECRET_KEY`）。
-- 管理员可调用以下接口在线轮换（无需重启进程）：
-  - `GET /api/v1/auth/key-info`
-  - `POST /api/v1/auth/rotate-key`
-
-然后在每台 Worker 启动：
+然后启动只消费 RPA 队列的 Worker：
 
 ```powershell
-cd Client_Server\backend
-.venv\Scripts\activate
-pip install -r requirements.txt
-pip install -r ..\..\Code\requirements.txt
-
-# 强制单进程模式 (-P solo) 避让 OMNIC 的界面独占与防错
 celery -A app.celery_app:celery_app worker --loglevel=info -P solo -Q rpa_queue
 ```
 
-> 说明：Windows 下默认进程池可能触发 `fast_trace_task` 相关报错，已在代码中对 Windows 强制 `solo`，命令中也建议保留 `-P solo`。
->
-> 扩容方式：按同样配置启动第 2/3/... 台 Windows worker（都订阅 `rpa_queue`），Celery 会在这些 worker 间分发 RPA 任务，实现并行处理。
+说明：
 
-**步骤 3：启动前端与访问**
+- Windows 下必须保持 `-P solo`，否则容易出现 `fast_trace_task` 相关异常。
+- 可以启动多台 Windows Worker，并全部订阅 `rpa_queue` 做横向扩容。
+- Worker 与 API 共享同一 JWT 当前密钥与 key id，便于一致的登录态校验与密钥轮换。
 
-在该机器（或局域网机器）上启动前端测试：
+### 3. 首次登录与用户模型
 
-```bash
+当前客户端已经启用账号体系：
+
+- 首次可使用管理员账号登录。
+- 前端支持普通用户自助注册。
+- 新注册用户默认不是管理员。
+- 用户名规则：3 到 8 位，仅允许字母、数字、下划线和短横杠。
+- 密码规则：6 到 16 位，不能有空格，且至少包含 1 个字母和 1 个数字。
+- 已登录用户可以在前端修改密码。
+
+### 4. 客户端使用流程
+
+登录后，Web 客户端的主要操作为：
+
+1. 上传 `.csv` 或图像文件。
+2. 点击“创建并运行任务”。
+3. 查看实时 WebSocket 日志与状态进度。
+4. 在“我的历史任务”中查看、删除或下载报告。
+
+任务状态包含：
+
+- `queued`
+- `preprocessing`
+- `rpa_pending`
+- `rpa_running`
+- `postprocessing`
+- `done`
+- `failed`
+
+任务产物默认位于共享存储下的如下路径：
+
+```text
+shared_storage/
+└── tasks/<task_id>/
+    ├── input/
+    └── output/
+```
+
+## 开发与调试说明
+
+### 内部服务栈
+
+如果只想拉起内部容器，不对外暴露统一入口，可以执行：
+
+```powershell
+cd Client_Server
+docker compose up -d --build
+```
+
+但要注意：
+
+- 该方式不会自动把前端、API、MySQL、Redis 发布到宿主机端口。
+- 更适合容器内部联调，或者你自己已经有额外反向代理时使用。
+
+### 前端本地开发
+
+前端可以单独启动 Vite：
+
+```powershell
 cd Client_Server\frontend
 npm install
 npm run dev
 ```
 
-之后只需打开浏览器访问前端地址即可进行操作。
+当前已经为 Vite 配好了 `/api` 开发代理，默认转发到 `http://127.0.0.1:8000`，并同时支持 WebSocket 日志流。
 
----
+如果你的后端不在本机 `8000` 端口，可以在 `Client_Server/frontend/.env.development` 中覆盖：
 
-### 方案 B：本地独立运行
-
-如果只需要单机、单任务快速排查或验证算法逻辑，可以使用原生的本地运行方式。
-
-**环境准备**
-
-```bash
-cd Code
-python -m venv .venv
-.\.venv\Scripts\activate
-pip install -r requirements.txt
+```env
+VITE_DEV_PROXY_TARGET=http://<your-api-host>:8000
 ```
 
-**使用图形界面 (GUI)**
-一键调出处理面板框，实时展示日志：
+这样前端继续请求 `/api/v1`，Vite 会在开发环境自动代理到目标后端。因此：
 
-```bash
+- `npm run dev` 适合做界面开发。
+- 如果后端已经通过 Nginx 对外提供统一入口，也可以继续直接使用该入口地址作为代理目标。
+
+## 本地单机模式
+
+如果你不需要 Web 平台，只想在 Windows 本机直接跑完整流程，可以使用 `Code` 目录下的本地入口。
+
+### GUI
+
+```powershell
+cd Code
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
 python run_gui.py
 ```
 
-**使用命令行接口 (CLI)**
+### CLI
 
-```bash
-# 格式：python pipeline.py <输入文件> [输出目录]
-python pipeline.py Demo/test_image.jpg ./output
-python pipeline.py Demo/7343-3.CSV ./output
+```powershell
+cd Code
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+python pipeline.py Demo/7343-3.CSV .\output
 ```
 
----
+CLI 默认会在输出根目录下新建时间戳子目录，并将 PDF 与中间产物写入其中。
 
-## ⚠️ 注意事项与未来计划
+## 常见问题
 
-1. `shared_storage` 负责 API 与 Worker 的数据交换。若为跨机器部署，请统一两端指向，否则 Worker 找不到输入/输出文件。
-2. Worker 也需要安装 `backend/requirements.txt`，否则可能因依赖缺失失败。
-3. 最小联通性自检：
-   - API 宿主机执行 `docker compose ps` 确认 `mysql` 与 `api` 运行中。
-   - API 宿主机执行 `docker compose ps` 确认 `worker_prepost` 也在运行。
-   - Worker 机器执行 `Test-NetConnection <API_HOST_IP> -Port 3307` 确认数据库端口可达。
-   - Windows Worker 启动后日志应显示仅订阅 `rpa_queue`。
-4. 计划加入 **权限控制/账户化系统**（保护分发接口安全），但目前处于内部测试阶段，暂时使用全局管理员权限。
+### 1. 浏览器能打开首页，但任务接口或日志失败
+
+优先检查：
+
+- 是否通过 Nginx 统一入口访问，而不是直接访问前端开发服务器。
+- 反向代理是否保留了 `/api/` 转发。
+- 反向代理是否为 `/api/v1/tasks/.*/ws` 保留了 WebSocket Upgrade 头。
+
+### 2. Windows Worker 提示共享目录不可访问
+
+优先检查：
+
+- `STORAGE_ROOT` 与 `SHARED_STORAGE_ROOT` 是否指向与容器同一份共享目录。
+- Windows 会话里是否已经挂载了正确的盘符，例如 `Y:`。
+- 如果使用 UNC，凭据是否正确，是否出现了 Windows 1219 或 1326 之类的会话冲突问题。
+
+### 3. 异机 Windows Worker 无法连接数据库或 Redis
+
+容易被忽略的一点：
+
+- 默认 Compose 没有把 MySQL 和 Redis 发布到宿主机。
+- 因此你必须额外提供 `<DB_HOST>:3306` 与 `<REDIS_HOST>:6379` 的可达入口，再把 Worker 的 `.env` 指向这些地址。
+- 如果你还在沿用旧文档里的 `3307`，请注意那是早期宿主机映射方案；当前默认 Compose 内部数据库端口是 `3306`。
+
+### 4. Worker 启动后报 Celery 进程池相关错误
+
+请确认启动命令中保留了：
+
+```powershell
+-P solo
+```
+
+这是 Windows 上运行 OMNIC RPA Worker 的稳定配置。
+
+## 安全建议
+
+- 立即替换默认管理员密码与默认 JWT 密钥。
+- 生产环境不要继续使用文档中的示例密钥与示例账号。
+- 如果启用公网访问，建议在 Nginx 基础上补齐 HTTPS、域名与更严格的 CORS 策略。
+- 当前后端仍允许 `allow_origins=["*"]`，正式环境应按实际域名收紧。
