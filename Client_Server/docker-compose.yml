@@ -5,14 +5,14 @@ services:
     expose:
       - "3306"
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: ftir
-      MYSQL_USER: ftir
-      MYSQL_PASSWORD: ftir
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-me-mysql-root-password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-ftir}
+      MYSQL_USER: ${MYSQL_USER:-ftir}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change-me-mysql-app-password}
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD:-change-me-mysql-root-password}"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -41,6 +41,7 @@ services:
     environment:
       TZ: Asia/Shanghai
       CODE_ROOT: /code
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
       STORAGE_ROOT: /shared
       SHARED_STORAGE_ROOT: /shared
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-ftir-dev-jwt-2026-03-24-change-before-production}
@@ -51,7 +52,7 @@ services:
       JWT_PREVIOUS_KID: ${JWT_PREVIOUS_KID:-}
       INITIAL_ADMIN_USERNAME: ${INITIAL_ADMIN_USERNAME:-admin}
       INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-femtotest210}
-      DATABASE_URL: mysql+pymysql://ftir:ftir@mysql:3306/ftir
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-ftir}:${MYSQL_PASSWORD:-change-me-mysql-app-password}@mysql:3306/${MYSQL_DATABASE:-ftir}
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
@@ -91,6 +92,7 @@ services:
     environment:
       TZ: Asia/Shanghai
       CODE_ROOT: /code
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
       STORAGE_ROOT: /shared
       SHARED_STORAGE_ROOT: /shared
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-ftir-dev-jwt-2026-03-24-change-before-production}
@@ -101,7 +103,7 @@ services:
       JWT_PREVIOUS_KID: ${JWT_PREVIOUS_KID:-}
       INITIAL_ADMIN_USERNAME: ${INITIAL_ADMIN_USERNAME:-admin}
       INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-femtotest210}
-      DATABASE_URL: mysql+pymysql://ftir:ftir@mysql:3306/ftir
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-ftir}:${MYSQL_PASSWORD:-change-me-mysql-app-password}@mysql:3306/${MYSQL_DATABASE:-ftir}
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}

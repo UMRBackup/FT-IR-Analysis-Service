@@ -56,7 +56,7 @@ def _wait_for_shared_file_ready(
             state = "empty" if exists else "missing"
             on_log(
                 (
-                    f"{context}: waiting for NAS file ({state}), "
+                    f"{context}: waiting for storage file ({state}), "
                     f"attempt={attempt}, wait={wait_seconds:.1f}s, path={resolved}"
                 ),
                 log_progress,

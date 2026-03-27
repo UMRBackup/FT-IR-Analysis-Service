@@ -9,6 +9,29 @@ from .config import settings
 
 
 _UNC_AUTH_CACHE: set[str] = set()
+_SUPPORTED_STORAGE_BACKENDS = {"local", "shared", "oos"}
+
+
+def _storage_backend() -> str:
+    backend = settings.storage_backend.strip().lower()
+    if backend not in _SUPPORTED_STORAGE_BACKENDS:
+        raise ValueError(
+            "Unsupported STORAGE_BACKEND. "
+            f"expected one of {sorted(_SUPPORTED_STORAGE_BACKENDS)}, got {settings.storage_backend!r}"
+        )
+    return backend
+
+
+def _configured_storage_root() -> Path:
+    backend = _storage_backend()
+    if backend == "local":
+        return settings.storage_root
+    if backend == "shared":
+        return settings.shared_storage_root
+    raise NotImplementedError(
+        "STORAGE_BACKEND=oos is reserved for a future object storage integration. "
+        "Use STORAGE_BACKEND=local or STORAGE_BACKEND=shared for now."
+    )
 
 
 def _unc_connection_root(path_str: str) -> str:
@@ -96,16 +119,40 @@ def _resolve_path_with_unc_access(path: Path) -> Path:
         raise RuntimeError(f"Shared path resolve failed after UNC precheck: {path}") from exc
 
 
+def _resolve_local_path(path: Path) -> Path:
+    try:
+        return path.resolve()
+    except OSError as exc:
+        raise RuntimeError(f"Local storage path resolve failed: {path}") from exc
+
+
+def _resolve_storage_path(path: Path) -> Path:
+    backend = _storage_backend()
+    if backend == "shared":
+        return _resolve_path_with_unc_access(path)
+    if backend == "local":
+        return _resolve_local_path(path)
+    raise NotImplementedError(
+        "STORAGE_BACKEND=oos is reserved for a future object storage integration. "
+        "Use STORAGE_BACKEND=local or STORAGE_BACKEND=shared for now."
+    )
+
+
+def _storage_root_label() -> str:
+    return "Shared root" if _storage_backend() == "shared" else "Storage root"
+
+
 def shared_root() -> Path:
-    return _resolve_path_with_unc_access(settings.shared_storage_root)
+    return _resolve_storage_path(_configured_storage_root())
 
 
 def ensure_shared_root_ready(context: str = "startup") -> Path:
     root = shared_root()
+    root_label = _storage_root_label()
     if not root.exists():
-        raise FileNotFoundError(f"[{context}] Shared root does not exist: {root}")
+        raise FileNotFoundError(f"[{context}] {root_label} does not exist: {root}")
     if not root.is_dir():
-        raise NotADirectoryError(f"[{context}] Shared root is not a directory: {root}")
+        raise NotADirectoryError(f"[{context}] {root_label} is not a directory: {root}")
 
     probe_name = f".probe_{context}_{socket.gethostname()}_{os.getpid()}"
     probe_file = root / probe_name
@@ -113,7 +160,7 @@ def ensure_shared_root_ready(context: str = "startup") -> Path:
         probe_file.write_text("ok", encoding="ascii")
         _ = probe_file.read_text(encoding="ascii")
     except Exception as exc:
-        raise RuntimeError(f"[{context}] Shared root read/write check failed at {root}: {exc}") from exc
+        raise RuntimeError(f"[{context}] {root_label} read/write check failed at {root}: {exc}") from exc
     finally:
         try:
             if probe_file.exists():
@@ -127,15 +174,15 @@ def ensure_shared_root_ready(context: str = "startup") -> Path:
 def resolve_shared_path(path_or_rel: str) -> Path:
     candidate = Path(path_or_rel)
     if candidate.is_absolute():
-        return _resolve_path_with_unc_access(candidate)
-    return _resolve_path_with_unc_access(shared_root() / candidate)
+        return _resolve_storage_path(candidate)
+    return _resolve_storage_path(shared_root() / candidate)
 
 
 def to_shared_rel_path(path_or_abs: str | Path) -> str:
-    absolute = _resolve_path_with_unc_access(Path(path_or_abs))
+    absolute = _resolve_storage_path(Path(path_or_abs))
     root = shared_root()
     try:
         return absolute.relative_to(root).as_posix()
     except ValueError:
-        # Fallback keeps compatibility if a path is outside the shared root.
+        # Fallback keeps compatibility if a path is outside the configured storage root.
         return str(absolute)

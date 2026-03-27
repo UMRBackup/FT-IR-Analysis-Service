@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     app_env: str = "dev"
     api_prefix: str = "/api/v1"
 
+    storage_backend: str = "local"
     code_root: Path = Path("../Code")
     storage_root: Path = Path("./storage")
     shared_storage_root: Path = Path("./storage")

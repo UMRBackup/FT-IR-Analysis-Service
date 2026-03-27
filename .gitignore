@@ -63,4 +63,7 @@ Code/output/
 Code/image_processing/debug/
 Code/Demo/20[0-9][0-9][0-9][0-9][0-9][0-9]_*/
 .env
+*.env.local
+*.env.production
+Client_Server/.env.generated
 .coverage

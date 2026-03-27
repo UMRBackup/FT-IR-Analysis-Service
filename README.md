@@ -15,7 +15,7 @@ The project currently supports two usage modes:
 - Use a Web client with registration, login, password change, task history, live logs, report download, and task deletion.
 - Run tasks through the `preprocess -> rpa -> postprocess` chain.
 - Offload the OMNIC stage to Windows RPA workers while container workers handle preprocess and postprocess only.
-- Store task inputs, outputs, and intermediate artifacts in shared storage.
+- Store task inputs, outputs, and intermediate artifacts under a configurable task storage root.
 - Keep `Code/run_gui.py` and `Code/pipeline.py` as standalone local entry points.
 
 ## Directory Layout
@@ -34,7 +34,7 @@ IR-Project/
 │   ├── image_processing/         # Image preprocessing and extraction
 │   ├── software_agent/           # OMNIC automation
 │   └── report_generator/         # Report generation
-└── shared_storage/               # Shared task inputs, outputs, and artifacts
+│   └── shared_storage/           # Local task directory, swappable with shared/OOS adapters
 ```
 
 ## Architecture
@@ -43,7 +43,7 @@ Recommended topology:
 
 - A Linux or Docker host runs `mysql + redis + api + frontend + worker_prepost + nginx`.
 - One or more Windows machines run the `rpa_queue` worker with OMNIC installed.
-- The Docker host and every Windows worker access the same shared storage.
+- The default setup now uses a local task directory; switch to shared storage when you need cross-machine workers.
 
 ## Prerequisites
 
@@ -54,6 +54,7 @@ Recommended topology:
 - Provide the following environment variables for the CIFS volume in `Client_Server/docker-compose.yml`:
 
 ```env
+STORAGE_BACKEND=local
 NAS_HOST=192.168.1.77
 NAS_SHARE=zhaozhixuan/shared_storage
 NAS_USER=<your_nas_user>
@@ -83,7 +84,8 @@ Notes:
 
 - Install OMNIC.
 - Install Python, ideally matching the backend major version.
-- Make sure the worker can access the same shared storage as the Docker host.
+- The default backend mode now uses local directory storage.
+- If you later switch to cross-machine shared storage, set `STORAGE_BACKEND=shared` and make sure the worker can access the same task directory as the Docker host.
 - If the worker uses a UNC path, you can provide `UNC_USERNAME` / `UNC_PASSWORD` in `Client_Server/backend/.env`. Even so, a mapped drive such as `Y:\shared_storage` is still the safer default on Windows because it avoids common session and credential conflicts.
 
 ## Recommended Deployment: Unified Web Entry
@@ -119,8 +121,9 @@ Create or update `Client_Server/backend/.env` with at least:
 
 ```env
 CODE_ROOT=C:\path\to\IR-Project\Code
-STORAGE_ROOT=Y:\shared_storage
-SHARED_STORAGE_ROOT=Y:\shared_storage
+STORAGE_BACKEND=local
+STORAGE_ROOT=C:\path\to\IR-Project\Client_Server\shared_storage
+SHARED_STORAGE_ROOT=C:\path\to\IR-Project\Client_Server\shared_storage
 
 JWT_SECRET_KEY=<same_current_secret_as_api>
 JWT_PREVIOUS_SECRET_KEY=
@@ -148,6 +151,7 @@ Notes:
 - Keep `-P solo` on Windows. This is the stable worker mode for OMNIC automation.
 - You can scale horizontally by starting multiple Windows workers subscribed to `rpa_queue`.
 - Worker-side JWT settings should match the active server-side key configuration.
+- If you later move back to a NAS or UNC share, switch `STORAGE_BACKEND` to `shared` and point `SHARED_STORAGE_ROOT` to the shared path.
 
 ### 3. First login and user model
 
@@ -179,10 +183,10 @@ Task statuses are:
 - `done`
 - `failed`
 
-Artifacts are stored under shared storage in the following structure:
+Artifacts are stored under the local task storage root by default:
 
 ```text
-shared_storage/
+Client_Server/shared_storage/
 └── tasks/<task_id>/
     ├── input/
     └── output/
@@ -267,8 +271,9 @@ Check the following first:
 
 Check the following first:
 
-- `STORAGE_ROOT` and `SHARED_STORAGE_ROOT` point to the same physical share used by the Docker host.
-- The expected mapped drive, such as `Y:`, exists in the worker session.
+- `STORAGE_BACKEND` matches your deployment mode: `local` for single-machine local directories, `shared` for mapped drives or UNC paths.
+- `STORAGE_ROOT` and `SHARED_STORAGE_ROOT` point to the intended task root.
+- If you are using a mapped drive or UNC path, confirm the expected drive such as `Y:` exists in the worker session.
 - If you are using UNC, verify credentials and look for Windows 1219 or 1326 session conflicts.
 
 ### 3. A remote Windows worker cannot reach MySQL or Redis

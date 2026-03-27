@@ -38,4 +38,4 @@ if os.name == "nt":
 @worker_init.connect
 def _worker_shared_root_precheck(**kwargs: object) -> None:
     root = ensure_shared_root_ready("celery-worker-startup")
-    logger.info("Shared root precheck passed for worker: %s", root)
+    logger.info("Storage root precheck passed for worker: %s", root)

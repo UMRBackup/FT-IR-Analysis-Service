@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     root = ensure_shared_root_ready("api-startup")
-    logger.info("Shared root precheck passed: %s", root)
+    logger.info("Storage root precheck passed: %s", root)
     yield
 
 
