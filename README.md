@@ -45,12 +45,6 @@ Recommended topology:
 - One or more Windows machines run the `rpa_queue` worker with OMNIC installed.
 - The Docker host and every Windows worker access the same shared storage.
 
-One current behavior change matters for deployment:
-
-- `mysql`, `redis`, and `api` are now only `expose`d inside the Docker network and are no longer published directly to host ports.
-- The default public entrypoint is Nginx from `docker-compose.proxy.yml`, publishing port `80`.
-- If an external Windows worker must connect directly to MySQL or Redis, you need an additional reachable endpoint for those services, such as explicit port publishing, an internal proxy, or existing infrastructure. Running the default Compose stack alone does not make container-internal MySQL or Redis reachable from another machine.
-
 ## Prerequisites
 
 ### 1. Docker host

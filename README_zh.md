@@ -45,12 +45,6 @@ IR-Project/
 - 一台或多台 Windows 机器运行 `rpa_queue` Worker，并安装 OMNIC。
 - 容器宿主机与 Windows Worker 共同访问同一份共享存储。
 
-当前 Compose 的默认行为有一个重要变化：
-
-- `mysql`、`redis`、`api` 现在只在 Docker 内部网络中 `expose`，不再直接映射宿主机端口。
-- 默认对外入口是 `docker-compose.proxy.yml` 中的 Nginx，公开 `80` 端口。
-- 如果你要让 Docker 宿主机之外的 Windows Worker 直接连接 MySQL/Redis，需要额外提供可达的数据库与 Broker 地址，例如单独发布端口、走内网代理、或接入已有基础设施。仅执行默认 `docker compose up` 并不能让异机 Worker 直接连到容器内的 MySQL/Redis。
-
 ## 运行前准备
 
 ### 1. 容器宿主机
