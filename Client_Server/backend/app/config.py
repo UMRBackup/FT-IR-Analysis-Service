@@ -11,10 +11,8 @@ class Settings(BaseSettings):
     app_env: str = "dev"
     api_prefix: str = "/api/v1"
 
-    storage_backend: str = "local"
     code_root: Path = Path("../Code")
     storage_root: Path = Path("./storage")
-    shared_storage_root: Path = Path("./storage")
 
     database_url: str = "mysql+pymysql://ftir:ftir@localhost:3307/ftir"
     celery_broker_url: str = "redis://localhost:6379/0"
@@ -37,13 +35,6 @@ class Settings(BaseSettings):
     shared_file_retry_timeout_sec: float = 45.0
     shared_file_retry_initial_delay_sec: float = 1.0
     shared_file_retry_max_delay_sec: float = 8.0
-
-    # Optional credentials used by Windows host processes to establish UNC sessions.
-    # These do not affect container-side CIFS mounts.
-    unc_username: str = ""
-    unc_password: str = ""
-    nas_user: str = ""
-    nas_pass: str = ""
 
     model_config = SettingsConfigDict(
         env_file=str(BACKEND_ROOT / ".env"),

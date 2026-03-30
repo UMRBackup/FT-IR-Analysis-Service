@@ -1,0 +1,11 @@
+{
+  "NasBackupRoot": "\\\\192.168.1.77\\zhaozhixuan\\ftir_backup",
+  "ComposeFile": "C:/Users/34029/Desktop/IR-Project/Client_Server/docker-compose.yml",
+  "EnvFile": "C:/Users/34029/Desktop/IR-Project/Client_Server/.env",
+  "BackupSourcePaths": [
+    "C:/Users/34029/Desktop/IR-Project/Client_Server/shared_storage"
+  ],
+  "RetentionDays": 14,
+  "MysqlServiceName": "mysql",
+  "BackupPrefix": "ftir"
+}

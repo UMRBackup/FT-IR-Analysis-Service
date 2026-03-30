@@ -70,7 +70,7 @@ def test_wait_for_shared_file_ready_no_retry_on_resolve_error(monkeypatch):
     monkeypatch.setattr(task_runner.settings, "shared_file_retry_max_delay_sec", 0.01)
 
     def fake_resolve(_: str) -> Path:
-        raise RuntimeError("UNC authentication failed")
+        raise RuntimeError("storage path resolve failed")
 
     sleep_calls = {"count": 0}
 
@@ -88,6 +88,6 @@ def test_wait_for_shared_file_ready_no_retry_on_resolve_error(monkeypatch):
         )
         assert False, "Expected RuntimeError"
     except RuntimeError as exc:
-        assert "UNC authentication failed" in str(exc)
+        assert "storage path resolve failed" in str(exc)
 
     assert sleep_calls["count"] == 0

@@ -88,5 +88,5 @@ if ($WriteEnvFile) {
 
     Set-Content -Path $targetPath -Value $content -Encoding ascii
     Write-Output "Wrote env template to $targetPath"
-    Write-Output "Remember to set NAS_USER, NAS_PASS, and any API keys manually."
+    Write-Output "Remember to set any external API keys manually."
 }

@@ -37,13 +37,11 @@ services:
     volumes:
       - ./backend:/app
       - ../Code:/code
-      - nas_shared:/shared
+      - ./shared_storage:/shared
     environment:
       TZ: Asia/Shanghai
       CODE_ROOT: /code
-      STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
       STORAGE_ROOT: /shared
-      SHARED_STORAGE_ROOT: /shared
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-ftir-dev-jwt-2026-03-24-change-before-production}
       JWT_PREVIOUS_SECRET_KEY: ${JWT_PREVIOUS_SECRET_KEY:-}
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
@@ -88,13 +86,11 @@ services:
     volumes:
       - ./backend:/app
       - ../Code:/code
-      - nas_shared:/shared
+      - ./shared_storage:/shared
     environment:
       TZ: Asia/Shanghai
       CODE_ROOT: /code
-      STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
       STORAGE_ROOT: /shared
-      SHARED_STORAGE_ROOT: /shared
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-ftir-dev-jwt-2026-03-24-change-before-production}
       JWT_PREVIOUS_SECRET_KEY: ${JWT_PREVIOUS_SECRET_KEY:-}
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
@@ -119,9 +115,3 @@ services:
 
 volumes:
   mysql_data:
-  nas_shared:
-    driver: local
-    driver_opts:
-      type: cifs
-      o: username=${NAS_USER},password=${NAS_PASS},vers=${NAS_VERS:-3.0},uid=0,gid=0,file_mode=0777,dir_mode=0777
-      device: "//${NAS_HOST:-192.168.1.77}/${NAS_SHARE:-zhaozhixuan/shared_storage}"

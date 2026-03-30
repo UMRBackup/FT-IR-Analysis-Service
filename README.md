@@ -34,7 +34,7 @@ IR-Project/
 │   ├── image_processing/         # Image preprocessing and extraction
 │   ├── software_agent/           # OMNIC automation
 │   └── report_generator/         # Report generation
-│   └── shared_storage/           # Local task directory, swappable with shared/OOS adapters
+└── Client_Server/shared_storage/ # Local task directory used at runtime
 ```
 
 ## Architecture
@@ -43,24 +43,14 @@ Recommended topology:
 
 - A Linux or Docker host runs `mysql + redis + api + frontend + worker_prepost + nginx`.
 - One or more Windows machines run the `rpa_queue` worker with OMNIC installed.
-- The default setup now uses a local task directory; switch to shared storage when you need cross-machine workers.
+- The runtime storage mode is local directory only; NAS is used for scheduled backups.
 
 ## Prerequisites
 
 ### 1. Docker host
 
 - Install Docker and Docker Compose.
-- Ensure the host can access the NAS/SMB share.
-- Provide the following environment variables for the CIFS volume in `Client_Server/docker-compose.yml`:
-
-```env
-STORAGE_BACKEND=local
-NAS_HOST=192.168.1.77
-NAS_SHARE=zhaozhixuan/shared_storage
-NAS_USER=<your_nas_user>
-NAS_PASS=<your_nas_password>
-NAS_VERS=3.0
-```
+- Ensure `Client_Server/shared_storage` is writable; it is bind-mounted to `/shared` in containers.
 
 - In production, also set auth and bootstrap values explicitly:
 
@@ -85,8 +75,6 @@ Notes:
 - Install OMNIC.
 - Install Python, ideally matching the backend major version.
 - The default backend mode now uses local directory storage.
-- If you later switch to cross-machine shared storage, set `STORAGE_BACKEND=shared` and make sure the worker can access the same task directory as the Docker host.
-- If the worker uses a UNC path, you can provide `UNC_USERNAME` / `UNC_PASSWORD` in `Client_Server/backend/.env`. Even so, a mapped drive such as `Y:\shared_storage` is still the safer default on Windows because it avoids common session and credential conflicts.
 
 ## Recommended Deployment: Unified Web Entry
 
@@ -121,9 +109,7 @@ Create or update `Client_Server/backend/.env` with at least:
 
 ```env
 CODE_ROOT=C:\path\to\IR-Project\Code
-STORAGE_BACKEND=local
 STORAGE_ROOT=C:\path\to\IR-Project\Client_Server\shared_storage
-SHARED_STORAGE_ROOT=C:\path\to\IR-Project\Client_Server\shared_storage
 
 JWT_SECRET_KEY=<same_current_secret_as_api>
 JWT_PREVIOUS_SECRET_KEY=
@@ -151,7 +137,6 @@ Notes:
 - Keep `-P solo` on Windows. This is the stable worker mode for OMNIC automation.
 - You can scale horizontally by starting multiple Windows workers subscribed to `rpa_queue`.
 - Worker-side JWT settings should match the active server-side key configuration.
-- If you later move back to a NAS or UNC share, switch `STORAGE_BACKEND` to `shared` and point `SHARED_STORAGE_ROOT` to the shared path.
 
 ### 3. First login and user model
 
@@ -267,14 +252,13 @@ Check the following first:
 - Your reverse proxy still forwards `/api/`.
 - Your reverse proxy keeps WebSocket upgrade headers for `/api/v1/tasks/.*/ws`.
 
-### 2. The Windows worker says the shared path is not accessible
+### 2. The Windows worker says the storage path is not accessible
 
 Check the following first:
 
-- `STORAGE_BACKEND` matches your deployment mode: `local` for single-machine local directories, `shared` for mapped drives or UNC paths.
-- `STORAGE_ROOT` and `SHARED_STORAGE_ROOT` point to the intended task root.
-- If you are using a mapped drive or UNC path, confirm the expected drive such as `Y:` exists in the worker session.
-- If you are using UNC, verify credentials and look for Windows 1219 or 1326 session conflicts.
+- `STORAGE_ROOT` points to the intended task root.
+- The storage path is writable by the worker process.
+- The worker process reads the expected `.env` file.
 
 ### 3. A remote Windows worker cannot reach MySQL or Redis
 
@@ -300,3 +284,33 @@ That is the stable Windows configuration for the OMNIC RPA worker.
 - Do not keep example credentials or example secrets in production.
 - If you expose the service outside a trusted LAN, add HTTPS, a real domain, and tighter CORS policy on top of the existing Nginx setup.
 - The backend currently still uses `allow_origins=["*"]`; narrow that down for production.
+
+## Scheduled NAS Backups
+
+Two scripts are available for periodic backups:
+
+- [Client_Server/scripts/backup-to-nas.ps1](Client_Server/scripts/backup-to-nas.ps1): run one backup job (MySQL + data folders).
+- [Client_Server/scripts/install-nas-backup-task.ps1](Client_Server/scripts/install-nas-backup-task.ps1): install a daily Windows Scheduled Task.
+
+1. Create your config file from [Client_Server/scripts/backup-config.example.json](Client_Server/scripts/backup-config.example.json).
+2. Run one manual backup first:
+
+```powershell
+cd Client_Server\scripts
+pwsh .\backup-to-nas.ps1 -ConfigFile .\backup-config.json
+```
+
+3. Install the daily task:
+
+```powershell
+cd Client_Server\scripts
+pwsh .\install-nas-backup-task.ps1 -ConfigFile .\backup-config.json -DailyAt 02:30
+```
+
+Each run writes a timestamped backup directory to NAS with:
+
+- `db/<database>.sql`
+- `data/<source_folder>/...`
+- `manifest.json`
+
+Old backups are removed automatically according to `RetentionDays`.

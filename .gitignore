@@ -66,4 +66,5 @@ Code/Demo/20[0-9][0-9][0-9][0-9][0-9][0-9]_*/
 *.env.local
 *.env.production
 Client_Server/.env.generated
+Client_Server/scripts/backup-config.json
 .coverage
